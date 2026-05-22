@@ -1,4 +1,11 @@
-import type { DeckEntry, ExpectedValueResult, KeyCardProbability } from '../types';
+import type {
+  Card,
+  ComboCondition,
+  ComboProbabilityResult,
+  DeckEntry,
+  ExpectedValueResult,
+  KeyCardProbability,
+} from '../types';
 
 const DECK_SIZE = 50;
 const HAND_SIZE = 5;
@@ -82,6 +89,83 @@ function calculateCostDistribution(entries: DeckEntry[]): Record<number, number>
     result[cost] = numerator / denom;
   }
   return result;
+}
+
+export function checkComboCondition(hand: Card[], condition: ComboCondition): boolean {
+  if (condition.logic === 'AND') {
+    return condition.items.every((item) => {
+      const count = hand.filter((c) => c.id === item.cardId).length;
+      return count >= item.minCount;
+    });
+  }
+  return condition.items.some((item) => {
+    const count = hand.filter((c) => c.id === item.cardId).length;
+    return count >= item.minCount;
+  });
+}
+
+// 超幾何分布の多変量列挙: 各カードグループの引き枚数を指定範囲で列挙して合計する
+function enumerateHandProb(
+  conditions: { deckCount: number; minRange: number; maxRange: number }[],
+  otherDeckCount: number
+): number {
+  const denom = combination(DECK_SIZE, HAND_SIZE);
+  function rec(idx: number, remaining: number, numerator: number): number {
+    if (idx === conditions.length) {
+      return numerator * combination(otherDeckCount, remaining);
+    }
+    const { deckCount, minRange, maxRange } = conditions[idx];
+    let total = 0;
+    for (let x = minRange; x <= Math.min(maxRange, remaining); x++) {
+      const c = combination(deckCount, x);
+      if (c === 0) continue;
+      total += rec(idx + 1, remaining - x, numerator * c);
+    }
+    return total;
+  }
+  return rec(0, HAND_SIZE, 1) / denom;
+}
+
+export function calculateComboProbability(
+  entries: DeckEntry[],
+  condition: ComboCondition
+): ComboProbabilityResult | null {
+  if (condition.items.length === 0) return null;
+
+  const resolved = condition.items
+    .map((item) => {
+      const entry = entries.find((e) => e.card.id === item.cardId);
+      return entry ? { deckCount: entry.count, minCount: item.minCount } : null;
+    })
+    .filter((x): x is { deckCount: number; minCount: number } => x !== null);
+
+  if (resolved.length !== condition.items.length) return null;
+
+  const totalSpecified = resolved.reduce((s, r) => s + r.deckCount, 0);
+  const otherDeckCount = DECK_SIZE - totalSpecified;
+  if (otherDeckCount < 0) return null;
+
+  let probInitialHand: number;
+
+  if (condition.logic === 'AND') {
+    const conds = resolved.map(({ deckCount, minCount }) => ({
+      deckCount,
+      minRange: minCount,
+      maxRange: deckCount,
+    }));
+    probInitialHand = enumerateHandProb(conds, otherDeckCount);
+  } else {
+    // P(1つ以上成立) = 1 - P(全条件不成立)
+    const conds = resolved.map(({ deckCount, minCount }) => ({
+      deckCount,
+      minRange: 0,
+      maxRange: minCount - 1,
+    }));
+    probInitialHand = 1 - enumerateHandProb(conds, otherDeckCount);
+  }
+
+  const probAfterMulligan = 1 - (1 - probInitialHand) ** 2;
+  return { probInitialHand, probAfterMulligan };
 }
 
 export function calculateKeyCardProbability(entries: DeckEntry[]): KeyCardProbability {

@@ -1,0 +1,111 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.cardTitle { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin: 0; }
+
+.logicToggle { display: flex; gap: 4px; }
+.logicBtn {
+  font-size: 11px;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  border-radius: 20px;
+  cursor: pointer;
+}
+.logicBtn:hover { background: var(--border); }
+.logicActive {
+  font-size: 11px;
+  padding: 3px 10px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: #fff;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.itemList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.conditionRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.cardSelect {
+  flex: 1;
+  min-width: 140px;
+  font-size: 13px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.countSelect {
+  font-size: 13px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.deckCount { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+.btnRemove {
+  font-size: 11px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  border-radius: var(--radius);
+  cursor: pointer;
+  line-height: 1;
+}
+.btnRemove:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+
+.btnAdd {
+  font-size: 12px;
+  padding: 5px 14px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius);
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 12px;
+}
+.btnAdd:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.btnAdd:disabled { opacity: 0.4; cursor: default; }
+
+.result { border-top: 1px solid var(--border); padding-top: 12px; }
+
+.probRow { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 10px; }
+.probItem { display: flex; flex-direction: column; gap: 4px; }
+.probLabel { font-size: 11px; color: var(--text-muted); }
+.probValue { font-size: 22px; font-weight: 800; color: var(--primary); }
+
+.hitBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #d1fae5;
+  color: #065f46;
+}
+.missBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: var(--text-muted);
+}
+
+.hint { font-size: 12px; color: var(--text-muted); margin: 0; }

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { calculateExpectedCost, calculateKeyCardProbability } from '../../logic/calculator';
 import { useDeckStoreCtx } from '../../store/DeckStoreContext';
+import ComboCalculator from '../common/ComboCalculator';
 import CostDistributionChart from './CostDistributionChart';
 import ExpectedValueCard from './ExpectedValueCard';
 import KeyCardProbabilityCard from './KeyCardProbabilityCard';
@@ -55,6 +56,9 @@ export default function Dashboard() {
           <KeyCardProbabilityCard probability={keyProb} entries={activeDeck.entries} />
         </div>
       )}
+      <div className={styles.wide}>
+        <ComboCalculator entries={activeDeck.entries} />
+      </div>
     </div>
   );
 }

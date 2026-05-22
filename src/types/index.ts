@@ -53,6 +53,24 @@ export interface MultiSimulationStats {
   standardDeviation: number;
   keyCardHitRate: number;
   costDistribution: Record<number, number>;
+  comboHitRate?: number;
+}
+
+export interface ComboConditionItem {
+  cardId: string;
+  minCount: number;
+}
+
+export type ComboLogic = 'AND' | 'OR';
+
+export interface ComboCondition {
+  items: ComboConditionItem[];
+  logic: ComboLogic;
+}
+
+export interface ComboProbabilityResult {
+  probInitialHand: number;
+  probAfterMulligan: number;
 }
 
 export interface ValidationError {

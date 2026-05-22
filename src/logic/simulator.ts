@@ -42,13 +42,16 @@ export function simulateMulligan(entries: DeckEntry[]): SimulationResult {
 }
 
 // 複数回シミュレーションを実行して統計を集計する
+// comboCheck を渡した場合はコンボ成立率も計測する
 export function runMultipleSimulations(
   entries: DeckEntry[],
-  count: number
+  count: number,
+  comboCheck?: (hand: Card[]) => boolean
 ): MultiSimulationStats {
   let totalCost = 0;
   let totalCostSq = 0;
   let keyCardHitCount = 0;
+  let comboHitCount = 0;
   const costFrequency: Record<number, number> = {};
 
   for (let i = 0; i < count; i++) {
@@ -57,6 +60,7 @@ export function runMultipleSimulations(
     totalCost += cost;
     totalCostSq += cost * cost;
     if (hand.some((card) => card.isKeyCard)) keyCardHitCount++;
+    if (comboCheck?.(hand)) comboHitCount++;
     costFrequency[cost] = (costFrequency[cost] ?? 0) + 1;
   }
 
@@ -76,5 +80,6 @@ export function runMultipleSimulations(
     standardDeviation,
     keyCardHitRate,
     costDistribution,
+    ...(comboCheck !== undefined ? { comboHitRate: comboHitCount / count } : {}),
   };
 }
