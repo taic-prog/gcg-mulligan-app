@@ -4,6 +4,7 @@ import {
   deleteDeck,
   loadDecks,
   saveDeck,
+  updateCardInDeck,
   updateDeck,
   useDeckStore,
 } from '../../src/store/deckStore';
@@ -103,6 +104,21 @@ describe('deleteDeck', () => {
     const remaining = loadDecks();
     expect(remaining).toHaveLength(1);
     expect(remaining[0].id).toBe(b.id);
+  });
+});
+
+describe('updateCardInDeck', () => {
+  it('指定カードのプロパティを更新しエントリ順序を保持する', () => {
+    const cardA = makeCard({ id: 'a', name: 'カードA' });
+    const cardB = makeCard({ id: 'b', name: 'カードB', isKeyCard: false });
+    const deck = saveDeck({ name: 'テスト', entries: [{ card: cardA, count: 2 }, { card: cardB, count: 3 }] });
+    const updated = updateCardInDeck(deck.id, 'b', { isKeyCard: true });
+    expect(updated?.entries[0].card.id).toBe('a');
+    expect(updated?.entries[1].card.isKeyCard).toBe(true);
+  });
+
+  it('存在しないデッキ ID は null を返す', () => {
+    expect(updateCardInDeck('ghost', 'card-1', { isKeyCard: true })).toBeNull();
   });
 });
 
@@ -240,6 +256,33 @@ describe('useDeckStore', () => {
       result.current.addEntry(makeEntry());
       result.current.updateEntry('some-id', 3);
       result.current.removeEntry('some-id');
+    });
+    expect(result.current.decks).toHaveLength(0);
+  });
+
+  it('updateCard でカードプロパティが更新されエントリ順序が保持される', () => {
+    const { result } = renderHook(() => useDeckStore());
+    const cardA = makeCard({ id: 'a' });
+    const cardB = makeCard({ id: 'b', isKeyCard: false });
+    act(() => {
+      const deck = result.current.saveNewDeck({
+        name: 'A',
+        entries: [{ card: cardA, count: 2 }, { card: cardB, count: 1 }],
+      });
+      result.current.setActiveDeck(deck.id);
+    });
+    act(() => {
+      result.current.updateCard('b', { isKeyCard: true });
+    });
+    const entries = result.current.activeDeck?.entries ?? [];
+    expect(entries[0].card.id).toBe('a');
+    expect(entries[1].card.isKeyCard).toBe(true);
+  });
+
+  it('activeDeck が null のとき updateCard は何もしない', () => {
+    const { result } = renderHook(() => useDeckStore());
+    act(() => {
+      result.current.updateCard('some-id', { isKeyCard: true });
     });
     expect(result.current.decks).toHaveLength(0);
   });

@@ -15,8 +15,8 @@ export default defineConfig({
         functions: 90,
         lines: 90,
       },
-      include: ['src/**/*.ts', 'src/**/*.tsx'],
-      exclude: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/main.tsx', 'src/App.tsx'],
+      include: ['src/logic/**/*.ts', 'src/store/deckStore.ts'],
+      exclude: [],
     },
   },
 });

@@ -1,5 +1,4 @@
 import { useDeckStoreCtx } from '../../store/DeckStoreContext';
-import type { DeckEntry } from '../../types';
 import CardForm from './CardForm';
 import DeckList from './DeckList';
 import DeckSummary from './DeckSummary';
@@ -7,7 +6,7 @@ import styles from './DeckEditor.module.css';
 
 export default function DeckEditor() {
   const { decks, activeDeck, setActiveDeck, saveNewDeck, deleteDeck, renameDeck,
-          addEntry, updateEntry, removeEntry } = useDeckStoreCtx();
+          addEntry, updateEntry, updateCard, removeEntry } = useDeckStoreCtx();
 
   function handleNewDeck() {
     const deck = saveNewDeck({ name: '新デッキ', entries: [] });
@@ -22,14 +21,7 @@ export default function DeckEditor() {
     if (!activeDeck) return;
     const entry = activeDeck.entries.find((e) => e.card.id === cardId);
     if (!entry) return;
-    updateEntry(cardId, entry.count);
-    // isKeyCard のトグルは card を丸ごと差し替える
-    const toggled: DeckEntry = {
-      ...entry,
-      card: { ...entry.card, isKeyCard: !entry.card.isKeyCard },
-    };
-    removeEntry(cardId);
-    addEntry(toggled);
+    updateCard(cardId, { isKeyCard: !entry.card.isKeyCard });
   }
 
   return (

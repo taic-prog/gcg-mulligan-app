@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import type { Deck, DeckEntry } from '../types';
+import type { Card, Deck, DeckEntry } from '../types';
 
 const STORAGE_KEY = 'gcg-decks';
 const MAX_DECKS = 5;
@@ -61,6 +61,28 @@ export function updateDeck(
   return updated;
 }
 
+// カードのプロパティを更新する（エントリの順序を保持）
+export function updateCardInDeck(
+  deckId: string,
+  cardId: string,
+  cardData: Partial<Card>
+): Deck | null {
+  const decks = loadDecks();
+  const index = decks.findIndex((d) => d.id === deckId);
+  if (index === -1) return null;
+  const updated: Deck = {
+    ...decks[index],
+    entries: decks[index].entries.map((e) =>
+      e.card.id === cardId ? { ...e, card: { ...e.card, ...cardData } } : e
+    ),
+    updatedAt: new Date().toISOString(),
+  };
+  const newDecks = [...decks];
+  newDecks[index] = updated;
+  persistDecks(newDecks);
+  return updated;
+}
+
 // -----------------------------------------------------------------------
 // useDeckStore フック
 // -----------------------------------------------------------------------
@@ -74,6 +96,7 @@ export interface DeckStore {
   renameDeck: (id: string, name: string) => void;
   addEntry: (entry: DeckEntry) => void;
   updateEntry: (cardId: string, count: number) => void;
+  updateCard: (cardId: string, cardData: Partial<Card>) => void;
   removeEntry: (cardId: string) => void;
 }
 
@@ -144,6 +167,15 @@ export function useDeckStore(): DeckStore {
     [activeDeckId, decks]
   );
 
+  const handleUpdateCard = useCallback(
+    (cardId: string, cardData: Partial<Card>) => {
+      if (!activeDeckId) return;
+      const updated = updateCardInDeck(activeDeckId, cardId, cardData);
+      if (updated) setDecks((prev) => prev.map((d) => (d.id === activeDeckId ? updated : d)));
+    },
+    [activeDeckId]
+  );
+
   return {
     decks,
     activeDeck,
@@ -153,6 +185,7 @@ export function useDeckStore(): DeckStore {
     renameDeck: handleRenameDeck,
     addEntry: handleAddEntry,
     updateEntry: handleUpdateEntry,
+    updateCard: handleUpdateCard,
     removeEntry: handleRemoveEntry,
   };
 }
