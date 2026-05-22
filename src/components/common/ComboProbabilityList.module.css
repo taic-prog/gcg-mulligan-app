@@ -1,0 +1,62 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.cardTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 12px;
+}
+
+.hint { font-size: 12px; color: var(--text-muted); margin: 0; }
+
+.list { display: flex; flex-direction: column; gap: 12px; }
+
+.row {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.rowHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.comboName { font-size: 13px; font-weight: 700; }
+.combMeta { font-size: 11px; color: var(--text-muted); }
+
+.hitBadge {
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #d1fae5;
+  color: #065f46;
+  margin-left: auto;
+}
+.missBadge {
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.probRow { display: flex; gap: 24px; flex-wrap: wrap; }
+.probItem { display: flex; flex-direction: column; gap: 3px; }
+.probLabel { font-size: 11px; color: var(--text-muted); }
+.probValue { font-size: 20px; font-weight: 800; color: var(--primary); }

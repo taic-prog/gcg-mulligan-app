@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import type { Card, Deck, DeckEntry } from '../types';
+import type { Card, Deck, DeckEntry, SavedCombo } from '../types';
 
 const STORAGE_KEY = 'gcg-decks';
 const MAX_DECKS = 5;
@@ -12,7 +12,9 @@ export function loadDecks(): Deck[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    return JSON.parse(raw) as Deck[];
+    const decks = JSON.parse(raw) as Deck[];
+    // 後方互換: combos フィールドがない既存デッキに空配列を補完
+    return decks.map((d) => ({ ...d, combos: d.combos ?? [] }));
   } catch {
     return [];
   }
@@ -32,6 +34,7 @@ export function saveDeck(data: { name: string; entries: DeckEntry[] }): Deck {
     id: crypto.randomUUID(),
     name: data.name,
     entries: data.entries,
+    combos: [],
     createdAt: now,
     updatedAt: now,
   };
@@ -45,7 +48,7 @@ export function deleteDeck(id: string): void {
 
 export function updateDeck(
   id: string,
-  data: { name?: string; entries?: DeckEntry[] }
+  data: { name?: string; entries?: DeckEntry[]; combos?: SavedCombo[] }
 ): Deck | null {
   const decks = loadDecks();
   const index = decks.findIndex((d) => d.id === id);
@@ -98,6 +101,9 @@ export interface DeckStore {
   updateEntry: (cardId: string, count: number) => void;
   updateCard: (cardId: string, cardData: Partial<Card>) => void;
   removeEntry: (cardId: string) => void;
+  addCombo: (combo: Omit<SavedCombo, 'id'>) => void;
+  updateCombo: (comboId: string, data: Partial<Pick<SavedCombo, 'name' | 'condition'>>) => void;
+  deleteCombo: (comboId: string) => void;
 }
 
 export function useDeckStore(): DeckStore {
@@ -176,6 +182,44 @@ export function useDeckStore(): DeckStore {
     [activeDeckId]
   );
 
+  const handleAddCombo = useCallback(
+    (combo: Omit<SavedCombo, 'id'>) => {
+      if (!activeDeckId) return;
+      const deck = decks.find((d) => d.id === activeDeckId);
+      if (!deck) return;
+      const newCombo: SavedCombo = { ...combo, id: crypto.randomUUID() };
+      const updated = updateDeck(activeDeckId, { combos: [...deck.combos, newCombo] });
+      if (updated) setDecks((prev) => prev.map((d) => (d.id === activeDeckId ? updated : d)));
+    },
+    [activeDeckId, decks]
+  );
+
+  const handleUpdateCombo = useCallback(
+    (comboId: string, data: Partial<Pick<SavedCombo, 'name' | 'condition'>>) => {
+      if (!activeDeckId) return;
+      const deck = decks.find((d) => d.id === activeDeckId);
+      if (!deck) return;
+      const updated = updateDeck(activeDeckId, {
+        combos: deck.combos.map((c) => (c.id === comboId ? { ...c, ...data } : c)),
+      });
+      if (updated) setDecks((prev) => prev.map((d) => (d.id === activeDeckId ? updated : d)));
+    },
+    [activeDeckId, decks]
+  );
+
+  const handleDeleteCombo = useCallback(
+    (comboId: string) => {
+      if (!activeDeckId) return;
+      const deck = decks.find((d) => d.id === activeDeckId);
+      if (!deck) return;
+      const updated = updateDeck(activeDeckId, {
+        combos: deck.combos.filter((c) => c.id !== comboId),
+      });
+      if (updated) setDecks((prev) => prev.map((d) => (d.id === activeDeckId ? updated : d)));
+    },
+    [activeDeckId, decks]
+  );
+
   return {
     decks,
     activeDeck,
@@ -187,5 +231,8 @@ export function useDeckStore(): DeckStore {
     updateEntry: handleUpdateEntry,
     updateCard: handleUpdateCard,
     removeEntry: handleRemoveEntry,
+    addCombo: handleAddCombo,
+    updateCombo: handleUpdateCombo,
+    deleteCombo: handleDeleteCombo,
   };
 }

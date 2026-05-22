@@ -1,5 +1,6 @@
 import { useDeckStoreCtx } from '../../store/DeckStoreContext';
 import CardForm from './CardForm';
+import ComboManager from './ComboManager';
 import DeckList from './DeckList';
 import DeckSummary from './DeckSummary';
 import styles from './DeckEditor.module.css';
@@ -64,6 +65,7 @@ export default function DeckEditor() {
               onRemove={removeEntry}
             />
             <DeckSummary entries={activeDeck.entries} />
+            <ComboManager />
           </>
         ) : (
           <p className={styles.noDeck}>「＋新規」ボタンでデッキを作成してください</p>

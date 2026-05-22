@@ -16,8 +16,10 @@ import styles from './ComboCalculator.module.css';
 
 interface Props {
   entries: DeckEntry[];
-  initialHand?: Card[];  // TestDraw で引いた初期手札（45枚マリガン計算に使用）
-  currentHand?: Card[];  // コンボ成立判定に使う手札（マリガン後があればそちら）
+  initialCondition?: ComboCondition;  // 編集開始時に状態を初期化する
+  showProbability?: boolean;          // 確率表示の有無（デフォルト true）
+  initialHand?: Card[];
+  currentHand?: Card[];
   onConditionChange?: (condition: ComboCondition | null) => void;
 }
 
@@ -26,9 +28,16 @@ function isItemComplete(item: ComboConditionItem): boolean {
   return item.attrValue !== undefined;
 }
 
-export default function ComboCalculator({ entries, initialHand, currentHand, onConditionChange }: Props) {
-  const [items, setItems] = useState<ComboConditionItem[]>([]);
-  const [logic, setLogic] = useState<ComboLogic>('AND');
+export default function ComboCalculator({
+  entries,
+  initialCondition,
+  showProbability = true,
+  initialHand,
+  currentHand,
+  onConditionChange,
+}: Props) {
+  const [items, setItems] = useState<ComboConditionItem[]>(() => initialCondition?.items ?? []);
+  const [logic, setLogic] = useState<ComboLogic>(() => initialCondition?.logic ?? 'AND');
 
   const condition = useMemo<ComboCondition | null>(
     () => (items.length > 0 ? { items, logic } : null),
@@ -245,7 +254,7 @@ export default function ComboCalculator({ entries, initialHand, currentHand, onC
         ＋ 条件を追加
       </button>
 
-      {result && (
+      {showProbability && result && (
         <div className={styles.result}>
           <div className={styles.probRow}>
             <div className={styles.probItem}>

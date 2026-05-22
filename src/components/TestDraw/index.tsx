@@ -1,9 +1,8 @@
-import { useCallback, useState } from 'react';
-import { checkComboCondition } from '../../logic/calculator';
+import { useState } from 'react';
 import { drawHand, runMultipleSimulations } from '../../logic/simulator';
 import { useDeckStoreCtx } from '../../store/DeckStoreContext';
-import type { Card, ComboCondition, MultiSimulationStats } from '../../types';
-import ComboCalculator from '../common/ComboCalculator';
+import type { Card, MultiSimulationStats } from '../../types';
+import ComboProbabilityList from '../common/ComboProbabilityList';
 import HandDisplay from './HandDisplay';
 import HandSummary from './HandSummary';
 import MulliganButton from './MulliganButton';
@@ -17,12 +16,6 @@ export default function TestDraw() {
   const [mulliganUsed, setMulliganUsed] = useState(false);
   const [simStats, setSimStats] = useState<MultiSimulationStats | null>(null);
   const [simRunning, setSimRunning] = useState(false);
-  const [comboCondition, setComboCondition] = useState<ComboCondition | null>(null);
-
-  const handleConditionChange = useCallback((cond: ComboCondition | null) => {
-    setComboCondition(cond);
-    setSimStats(null);
-  }, []);
 
   const total = activeDeck?.entries.reduce((s, e) => s + e.count, 0) ?? 0;
   const ready = activeDeck !== null && total === 50;
@@ -46,10 +39,7 @@ export default function TestDraw() {
     setSimRunning(true);
     // setTimeout で UI をブロックしない（NFR-02 対応）
     setTimeout(() => {
-      const checker = comboCondition
-        ? (hand: Card[]) => checkComboCondition(hand, comboCondition)
-        : undefined;
-      setSimStats(runMultipleSimulations(activeDeck.entries, count, checker));
+      setSimStats(runMultipleSimulations(activeDeck.entries, count));
       setSimRunning(false);
     }, 0);
   }
@@ -134,21 +124,15 @@ export default function TestDraw() {
               <span className={styles.compareLabel}>キーカード含有率（実測）</span>
               <span className={styles.compareValue}>{(simStats.keyCardHitRate * 100).toFixed(1)}%</span>
             </div>
-            {simStats.comboHitRate !== undefined && (
-              <div className={styles.compareItem}>
-                <span className={styles.compareLabel}>コンボ成立率（実測）</span>
-                <span className={styles.compareValue}>{(simStats.comboHitRate * 100).toFixed(2)}%</span>
-              </div>
-            )}
           </div>
         </div>
       )}
 
-      <ComboCalculator
+      <ComboProbabilityList
+        combos={activeDeck.combos}
         entries={activeDeck.entries}
         initialHand={initialHand ?? undefined}
         currentHand={mulliganHand ?? initialHand ?? undefined}
-        onConditionChange={handleConditionChange}
       />
     </div>
   );

@@ -17,10 +17,17 @@ export interface DeckEntry {
   count: number;
 }
 
+export interface SavedCombo {
+  id: string;
+  name: string;
+  condition: ComboCondition;
+}
+
 export interface Deck {
   id: string;
   name: string;
   entries: DeckEntry[];
+  combos: SavedCombo[];
   createdAt: string;
   updatedAt: string;
 }
