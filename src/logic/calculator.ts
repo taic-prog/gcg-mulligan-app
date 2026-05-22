@@ -1,6 +1,7 @@
 import type {
   Card,
   ComboCondition,
+  ComboConditionItem,
   ComboProbabilityResult,
   DeckEntry,
   ExpectedValueResult,
@@ -92,24 +93,43 @@ function calculateCostDistribution(entries: DeckEntry[]): Record<number, number>
 }
 
 export function checkComboCondition(hand: Card[], condition: ComboCondition): boolean {
-  if (condition.logic === 'AND') {
-    return condition.items.every((item) => {
-      const count = hand.filter((c) => c.id === item.cardId).length;
-      return count >= item.minCount;
-    });
-  }
-  return condition.items.some((item) => {
-    const count = hand.filter((c) => c.id === item.cardId).length;
-    return count >= item.minCount;
-  });
+  const check = (item: ComboConditionItem): boolean => {
+    if (item.type === 'card') {
+      return hand.filter((c) => c.id === item.cardId).length >= item.minCount;
+    } else if (item.type === 'cost') {
+      return hand.filter((c) => c.cost === item.attrValue).length >= item.minCount;
+    } else {
+      return hand.filter((c) => c.level === item.attrValue).length >= item.minCount;
+    }
+  };
+  return condition.logic === 'AND'
+    ? condition.items.every(check)
+    : condition.items.some(check);
 }
 
-// 超幾何分布の多変量列挙: 各カードグループの引き枚数を指定範囲で列挙して合計する
+// 初期手札を除いた残りのデッキエントリを返す
+export function computeRemainingEntries(entries: DeckEntry[], hand: Card[]): DeckEntry[] {
+  const countMap = new Map(entries.map((e) => [e.card.id, e.count]));
+  for (const card of hand) {
+    const n = countMap.get(card.id);
+    if (n !== undefined) {
+      if (n <= 1) countMap.delete(card.id);
+      else countMap.set(card.id, n - 1);
+    }
+  }
+  return entries
+    .map((e) => ({ ...e, count: countMap.get(e.card.id) ?? 0 }))
+    .filter((e) => e.count > 0);
+}
+
+// 超幾何分布の多変量列挙: 各グループの引き枚数を指定範囲で列挙して合計する
+// totalDeck に実際のデッキ枚数を渡すことで 45枚デッキにも対応
 function enumerateHandProb(
   conditions: { deckCount: number; minRange: number; maxRange: number }[],
-  otherDeckCount: number
+  otherDeckCount: number,
+  totalDeck: number
 ): number {
-  const denom = combination(DECK_SIZE, HAND_SIZE);
+  const denom = combination(totalDeck, HAND_SIZE);
   function rec(idx: number, remaining: number, numerator: number): number {
     if (idx === conditions.length) {
       return numerator * combination(otherDeckCount, remaining);
@@ -132,36 +152,62 @@ export function calculateComboProbability(
 ): ComboProbabilityResult | null {
   if (condition.items.length === 0) return null;
 
-  const resolved = condition.items
-    .map((item) => {
-      const entry = entries.find((e) => e.card.id === item.cardId);
-      return entry ? { deckCount: entry.count, minCount: item.minCount } : null;
-    })
-    .filter((x): x is { deckCount: number; minCount: number } => x !== null);
+  const totalDeck = entries.reduce((s, e) => s + e.count, 0);
+  if (totalDeck < HAND_SIZE) return null;
 
-  if (resolved.length !== condition.items.length) return null;
+  // カード指定条件のカードIDを収集（コスト/レベル条件から除外するため）
+  const specifiedCardIds = new Set(
+    condition.items
+      .filter((i) => i.type === 'card' && i.cardId)
+      .map((i) => i.cardId!)
+  );
 
-  const totalSpecified = resolved.reduce((s, r) => s + r.deckCount, 0);
-  const otherDeckCount = DECK_SIZE - totalSpecified;
+  const resolved = condition.items.map(
+    (item): { deckCount: number; minCount: number } | null => {
+      if (item.type === 'card') {
+        const entry = entries.find((e) => e.card.id === item.cardId);
+        if (!entry) return null;
+        return { deckCount: entry.count, minCount: item.minCount };
+      } else if (item.type === 'cost') {
+        if (item.attrValue === undefined) return null;
+        const deckCount = entries
+          .filter((e) => e.card.cost === item.attrValue && !specifiedCardIds.has(e.card.id))
+          .reduce((s, e) => s + e.count, 0);
+        return { deckCount, minCount: item.minCount };
+      } else {
+        if (item.attrValue === undefined) return null;
+        const deckCount = entries
+          .filter((e) => e.card.level === item.attrValue && !specifiedCardIds.has(e.card.id))
+          .reduce((s, e) => s + e.count, 0);
+        return { deckCount, minCount: item.minCount };
+      }
+    }
+  );
+
+  if (resolved.some((r) => r === null)) return null;
+  const valid = resolved as { deckCount: number; minCount: number }[];
+
+  const totalSpecified = valid.reduce((s, r) => s + r.deckCount, 0);
+  const otherDeckCount = totalDeck - totalSpecified;
   if (otherDeckCount < 0) return null;
 
   let probInitialHand: number;
 
   if (condition.logic === 'AND') {
-    const conds = resolved.map(({ deckCount, minCount }) => ({
+    const conds = valid.map(({ deckCount, minCount }) => ({
       deckCount,
       minRange: minCount,
       maxRange: deckCount,
     }));
-    probInitialHand = enumerateHandProb(conds, otherDeckCount);
+    probInitialHand = enumerateHandProb(conds, otherDeckCount, totalDeck);
   } else {
     // P(1つ以上成立) = 1 - P(全条件不成立)
-    const conds = resolved.map(({ deckCount, minCount }) => ({
+    const conds = valid.map(({ deckCount, minCount }) => ({
       deckCount,
       minRange: 0,
       maxRange: minCount - 1,
     }));
-    probInitialHand = 1 - enumerateHandProb(conds, otherDeckCount);
+    probInitialHand = 1 - enumerateHandProb(conds, otherDeckCount, totalDeck);
   }
 
   const probAfterMulligan = 1 - (1 - probInitialHand) ** 2;

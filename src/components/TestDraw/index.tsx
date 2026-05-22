@@ -146,6 +146,7 @@ export default function TestDraw() {
 
       <ComboCalculator
         entries={activeDeck.entries}
+        initialHand={initialHand ?? undefined}
         currentHand={mulliganHand ?? initialHand ?? undefined}
         onConditionChange={handleConditionChange}
       />

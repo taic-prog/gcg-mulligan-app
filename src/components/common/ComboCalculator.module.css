@@ -34,7 +34,17 @@
 .itemList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
 .conditionRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
-.cardSelect {
+.typeSelect {
+  font-size: 12px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.valueSelect {
   flex: 1;
   min-width: 140px;
   font-size: 13px;
@@ -52,9 +62,8 @@
   border-radius: var(--radius);
   background: var(--bg);
   color: var(--text);
+  flex-shrink: 0;
 }
-
-.deckCount { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
 
 .btnRemove {
   font-size: 11px;

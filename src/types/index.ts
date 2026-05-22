@@ -56,8 +56,12 @@ export interface MultiSimulationStats {
   comboHitRate?: number;
 }
 
+export type ComboConditionType = 'card' | 'cost' | 'level';
+
 export interface ComboConditionItem {
-  cardId: string;
+  type: ComboConditionType;
+  cardId?: string;     // type === 'card' のとき使用
+  attrValue?: number;  // type === 'cost' | 'level' のとき使用
   minCount: number;
 }
 
