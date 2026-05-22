@@ -1,0 +1,27 @@
+.layout { display: flex; flex-direction: column; gap: 16px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.cardTitle { font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .04em; }
+
+.btnRow { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.btnRun { background: var(--primary); color: #fff; font-weight: 600; padding: 8px 18px; }
+.btnRun:hover:not(:disabled) { background: var(--primary-dark); }
+
+.statsGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.stat { display: flex; flex-direction: column; gap: 4px; }
+.statLabel { font-size: 11px; color: var(--text-muted); }
+.statValue { font-size: 24px; font-weight: 800; color: var(--primary); }
+
+.noData { text-align: center; color: var(--text-muted); padding: 60px 0; }
+.noDataHint { font-size: 12px; margin-top: 6px; }
+
+@media (max-width: 600px) {
+  .statsGrid { grid-template-columns: 1fr 1fr; }
+}

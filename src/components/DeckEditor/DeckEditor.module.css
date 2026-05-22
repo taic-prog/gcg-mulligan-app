@@ -1,0 +1,88 @@
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+  align-items: start;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.panelTitle { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+
+/* デッキ選択バー */
+.deckBar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.deckSelect { flex: 1; min-width: 120px; }
+.deckName { flex: 1; min-width: 120px; font-weight: 600; }
+.btnNew { background: var(--primary); color: #fff; white-space: nowrap; }
+.btnNew:hover { background: var(--primary-dark); }
+.btnDel { background: #fee2e2; color: var(--error); white-space: nowrap; }
+.btnDel:hover { background: #fecaca; }
+
+/* フォーム */
+.formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.formFull { grid-column: 1 / -1; }
+.formActions { margin-top: 12px; }
+.btnAdd { background: var(--primary); color: #fff; width: 100%; padding: 8px; font-weight: 600; }
+.btnAdd:hover:not(:disabled) { background: var(--primary-dark); }
+.errorList { margin-top: 8px; }
+.errorItem { color: var(--error); font-size: 12px; }
+.checkRow { display: flex; align-items: center; gap: 6px; grid-column: 1 / -1; }
+.checkRow input { width: auto; }
+.checkRow label { margin: 0; font-size: 13px; color: var(--text); }
+
+/* デッキリスト */
+.listHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px; color: var(--text-muted); }
+.emptyMsg { text-align: center; color: var(--text-muted); padding: 24px 0; }
+
+/* DeckListItem */
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.item:last-child { border-bottom: none; }
+.badge {
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: #e0e7ff;
+  color: #3730a3;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.keyIcon { color: var(--key); font-size: 14px; flex-shrink: 0; }
+.cardName { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.costBadge { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.counter { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.counter button { padding: 2px 7px; background: var(--bg); border: 1px solid var(--border); font-weight: 700; min-width: 24px; border-radius: 3px; }
+.counter button:hover:not(:disabled) { background: var(--border); }
+.countNum { min-width: 16px; text-align: center; font-weight: 600; }
+.btnKey { padding: 2px 6px; background: transparent; border: 1px solid var(--border); font-size: 13px; }
+.btnKey.active { background: #fef3c7; border-color: var(--key); }
+.btnRemove { padding: 2px 6px; background: transparent; border: 1px solid var(--border); color: var(--error); font-size: 13px; }
+.btnRemove:hover { background: #fee2e2; }
+
+/* DeckSummary */
+.summary { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--border); }
+.summaryItem { display: flex; gap: 4px; }
+.summaryLabel { color: var(--text-muted); }
+.count50 { color: var(--success); font-weight: 700; }
+.countWarn { color: var(--error); font-weight: 700; }
+.validationErrors { margin-top: 8px; }
+.validErr { font-size: 12px; color: var(--error); }
+
+/* 空デッキメッセージ */
+.noDeck { text-align: center; color: var(--text-muted); padding: 40px 0; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,21 @@
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow);
+}
+
+.title { font-size: 16px; font-weight: 700; color: var(--primary); white-space: nowrap; }
+
+.main { flex: 1; padding: 20px; max-width: 1280px; margin: 0 auto; width: 100%; }
+
+@media (max-width: 600px) {
+  .header { padding: 10px 12px; gap: 10px; }
+  .main { padding: 12px; }
+}

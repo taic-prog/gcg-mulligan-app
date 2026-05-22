@@ -1,0 +1,54 @@
+.layout { display: flex; flex-direction: column; gap: 16px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.cardTitle { font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .04em; }
+
+.drawActions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.btnDraw { background: var(--primary); color: #fff; font-weight: 600; padding: 8px 20px; }
+.btnDraw:hover:not(:disabled) { background: var(--primary-dark); }
+
+/* HandDisplay */
+.hand { display: flex; flex-direction: column; gap: 6px; }
+.handCard { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); }
+.num { font-size: 12px; color: var(--text-muted); min-width: 16px; }
+.badge { font-size: 10px; padding: 2px 5px; border-radius: 3px; background: #e0e7ff; color: #3730a3; flex-shrink: 0; }
+.keyIcon { color: var(--key); }
+.name { flex: 1; font-weight: 500; }
+.cost { font-size: 13px; font-weight: 700; color: var(--primary); }
+
+/* HandSummary */
+.summary { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.totalCost { font-size: 20px; font-weight: 800; color: var(--primary); }
+.keyResult { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.keyHit { background: #fef3c7; color: #92400e; }
+.keyMiss { background: #f1f5f9; color: var(--text-muted); }
+
+/* MulliganButton */
+.btnMulligan { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; padding: 8px 20px; font-weight: 600; }
+.btnMulligan:hover:not(:disabled) { background: #fde68a; }
+
+/* SimulationButtons */
+.simSection { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px; }
+.simTitle { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; }
+.simBtns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btnSim { background: var(--bg); border: 1px solid var(--border); }
+.btnSim:hover:not(:disabled) { background: var(--border); }
+
+.noData { text-align: center; color: var(--text-muted); padding: 40px 0; }
+.noDataHint { font-size: 12px; margin-top: 6px; }
+
+.mulliganCompare { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; }
+.compareItem { display: flex; flex-direction: column; gap: 2px; }
+.compareLabel { font-size: 11px; color: var(--text-muted); }
+.compareValue { font-weight: 700; font-size: 18px; }
+
+@media (max-width: 600px) {
+  .handCard { flex-wrap: wrap; }
+}

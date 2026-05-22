@@ -1,0 +1,34 @@
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.wide { grid-column: 1 / -1; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.cardTitle { font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .04em; }
+
+.statRow { display: flex; gap: 24px; flex-wrap: wrap; }
+.stat { display: flex; flex-direction: column; gap: 2px; }
+.statLabel { font-size: 11px; color: var(--text-muted); }
+.statValue { font-size: 26px; font-weight: 800; color: var(--primary); line-height: 1; }
+.statUnit { font-size: 12px; color: var(--text-muted); }
+
+.noteBox { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius); padding: 12px; font-size: 13px; line-height: 1.6; color: #1e40af; }
+
+.probRow { display: flex; gap: 24px; flex-wrap: wrap; }
+.probItem { display: flex; flex-direction: column; gap: 4px; }
+.probLabel { font-size: 12px; color: var(--text-muted); }
+.probValue { font-size: 22px; font-weight: 800; color: var(--primary); }
+.keyInfo { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+
+.noData { text-align: center; color: var(--text-muted); padding: 60px 0; }
+.noDataHint { font-size: 12px; margin-top: 6px; }
+
+@media (max-width: 700px) {
+  .grid { grid-template-columns: 1fr; }
+  .wide { grid-column: 1; }
+}
