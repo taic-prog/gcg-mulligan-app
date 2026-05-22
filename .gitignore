@@ -1,0 +1,20 @@
+# 依存パッケージ
+node_modules/
+
+# ビルド成果物
+dist/
+
+# キャッシュ
+.vite/
+coverage/
+
+# エディタ
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Windows Zone Identifier
+*.Identifier
