@@ -79,7 +79,6 @@ export function simulatePlayability(
     let hand: Card[] = deck.slice(0, 5);
     let ptr = 5;
 
-    // ターン1: 1枚ドロー、cost=1 を払えればプレイ
     hand.push(deck[ptr++]);
     let t1: boolean;
     if (multiCardMode) {
@@ -92,7 +91,6 @@ export function simulatePlayability(
       if (t1) hand.splice(idx, 1);
     }
 
-    // ターン2: 1枚ドロー、cost=2 を払えればプレイ
     hand.push(deck[ptr++]);
     let t2: boolean;
     if (multiCardMode) {
@@ -105,7 +103,6 @@ export function simulatePlayability(
       if (t2) hand.splice(idx, 1);
     }
 
-    // ターン3: 1枚ドロー、cost=3 を払えるか確認
     hand.push(deck[ptr++]);
     const t3 = multiCardMode
       ? removeSubsetSummingTo(hand, 3) !== null
@@ -123,6 +120,82 @@ export function simulatePlayability(
     turn3Rate: t3Hits / trials,
     allTurnsRate: allHits / trials,
     trialCount: trials,
+  };
+}
+
+// 単体モードとコスト合算モードを同一シャッフル結果で同時に計算する。
+// 同じ試行データを共有するため T1〜T3 の値がモード間で一致する。
+export function simulateBothPlayabilityModes(
+  entries: DeckEntry[],
+  trials = 10000,
+): { single: PlayabilityStats; multi: PlayabilityStats } {
+  const baseDeck = expandDeck(entries);
+  let s1 = 0, s2 = 0, s3 = 0, sAll = 0;
+  let m1 = 0, m2 = 0, m3 = 0, mAll = 0;
+
+  for (let i = 0; i < trials; i++) {
+    const deck = fisherYatesShuffle(baseDeck);
+
+    // 単体モード
+    {
+      let hand: Card[] = deck.slice(0, 5);
+      let ptr = 5;
+
+      hand.push(deck[ptr++]);
+      const idx1 = hand.findIndex((c) => c.cost === 1);
+      const t1 = idx1 !== -1;
+      if (t1) hand.splice(idx1, 1);
+
+      hand.push(deck[ptr++]);
+      const idx2 = hand.findIndex((c) => c.cost === 2);
+      const t2 = idx2 !== -1;
+      if (t2) hand.splice(idx2, 1);
+
+      hand.push(deck[ptr++]);
+      const t3 = hand.some((c) => c.cost === 3);
+
+      if (t1) s1++;
+      if (t2) s2++;
+      if (t3) s3++;
+      if (t1 && t2 && t3) sAll++;
+    }
+
+    // コスト合算モード（同じ deck 順を使用）
+    {
+      let hand: Card[] = deck.slice(0, 5);
+      let ptr = 5;
+
+      hand.push(deck[ptr++]);
+      const next1 = removeSubsetSummingTo(hand, 1);
+      const t1 = next1 !== null;
+      if (t1) hand = next1!;
+
+      hand.push(deck[ptr++]);
+      const next2 = removeSubsetSummingTo(hand, 2);
+      const t2 = next2 !== null;
+      if (t2) hand = next2!;
+
+      hand.push(deck[ptr++]);
+      const t3 = removeSubsetSummingTo(hand, 3) !== null;
+
+      if (t1) m1++;
+      if (t2) m2++;
+      if (t3) m3++;
+      if (t1 && t2 && t3) mAll++;
+    }
+  }
+
+  const make = (t1: number, t2: number, t3: number, all: number): PlayabilityStats => ({
+    turn1Rate: t1 / trials,
+    turn2Rate: t2 / trials,
+    turn3Rate: t3 / trials,
+    allTurnsRate: all / trials,
+    trialCount: trials,
+  });
+
+  return {
+    single: make(s1, s2, s3, sAll),
+    multi: make(m1, m2, m3, mAll),
   };
 }
 

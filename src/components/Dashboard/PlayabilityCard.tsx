@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { simulatePlayability } from '../../logic/simulator';
+import { simulateBothPlayabilityModes } from '../../logic/simulator';
 import type { DeckEntry, PlayabilityStats } from '../../types';
 import styles from './PlayabilityCard.module.css';
 
@@ -29,8 +29,9 @@ export default function PlayabilityCard({ entries }: Props) {
     setSingleStats(null);
     setMultiStats(null);
     const timer = setTimeout(() => {
-      setSingleStats(simulatePlayability(entries, false, 10000));
-      setMultiStats(simulatePlayability(entries, true, 10000));
+      const { single, multi } = simulateBothPlayabilityModes(entries, 10000);
+      setSingleStats(single);
+      setMultiStats(multi);
       setRunning(false);
     }, 0);
     return () => clearTimeout(timer);
