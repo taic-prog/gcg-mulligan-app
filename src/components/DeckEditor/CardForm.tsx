@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fetchCardInfo } from '../../logic/cardFetch';
 import { canAddCard, validateCard } from '../../logic/validator';
 import type { Card, CardColor, CardType, DeckEntry } from '../../types';
 import styles from './DeckEditor.module.css';
@@ -30,9 +31,32 @@ interface Props {
 export default function CardForm({ entries, onAdd }: Props) {
   const [form, setForm] = useState<FormState>(INIT);
   const [errors, setErrors] = useState<string[]>([]);
+  const [fetching, setFetching] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function handleFetch() {
+    if (!form.cardNo.trim()) return;
+    setFetching(true);
+    setFetchError(null);
+    try {
+      const info = await fetchCardInfo(form.cardNo.trim());
+      setForm((prev) => ({
+        ...prev,
+        name: info.name,
+        cardType: info.cardType,
+        color: info.color,
+        level: String(info.level),
+        cost: String(info.cost),
+      }));
+    } catch {
+      setFetchError('カード情報の取得に失敗しました');
+    } finally {
+      setFetching(false);
+    }
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -84,7 +108,22 @@ export default function CardForm({ entries, onAdd }: Props) {
       <div className={styles.formGrid}>
         <div>
           <label>カードNo.</label>
-          <input value={form.cardNo} onChange={(e) => set('cardNo', e.target.value)} placeholder="省略可（名前で代用）" />
+          <div className={styles.cardNoRow}>
+            <input
+              value={form.cardNo}
+              onChange={(e) => { set('cardNo', e.target.value); setFetchError(null); }}
+              placeholder="例: GD01-001"
+            />
+            <button
+              type="button"
+              className={styles.btnFetch}
+              onClick={handleFetch}
+              disabled={!form.cardNo.trim() || fetching}
+            >
+              {fetching ? '取得中…' : '取得'}
+            </button>
+          </div>
+          {fetchError && <p className={styles.fetchError}>{fetchError}</p>}
         </div>
         <div>
           <label>枚数</label>
