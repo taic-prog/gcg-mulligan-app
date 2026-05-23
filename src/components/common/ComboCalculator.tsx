@@ -211,72 +211,82 @@ export default function ComboCalculator({
               </select>
             )}
 
-            {/* 属性指定（タイプ・色・Lv・コストを任意組み合わせ） */}
+            {/* 属性指定（タイプ・色・Lv・コストをラベル付きで任意組み合わせ） */}
             {item.type === 'attr' && (
-              <div className={styles.attrGroup}>
-                {/* タイプ */}
-                <select
-                  className={styles.attrSelect}
-                  value={item.filterCardType ?? ''}
-                  onChange={(e) =>
-                    updateItem(idx, {
-                      filterCardType: e.target.value ? (e.target.value as CardType) : undefined,
-                    })
-                  }
-                >
-                  <option value="">タイプ: 指定なし</option>
-                  {CARD_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-                {/* 色 */}
-                <select
-                  className={styles.attrSelect}
-                  value={item.filterColor ?? ''}
-                  onChange={(e) =>
-                    updateItem(idx, {
-                      filterColor: e.target.value ? (e.target.value as CardColor) : undefined,
-                    })
-                  }
-                >
-                  <option value="">色: 指定なし</option>
-                  {CARD_COLORS.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                {/* レベル */}
-                <select
-                  className={styles.attrSelect}
-                  value={item.filterLevel ?? ''}
-                  onChange={(e) =>
-                    updateItem(idx, {
-                      filterLevel: e.target.value !== '' ? Number(e.target.value) : undefined,
-                    })
-                  }
-                >
-                  <option value="">Lv: 指定なし</option>
-                  {levelValues.map((v) => (
-                    <option key={v} value={v}>Lv{v}</option>
-                  ))}
-                </select>
-                {/* コスト */}
-                <select
-                  className={styles.attrSelect}
-                  value={item.filterCost ?? ''}
-                  onChange={(e) =>
-                    updateItem(idx, {
-                      filterCost: e.target.value !== '' ? Number(e.target.value) : undefined,
-                    })
-                  }
-                >
-                  <option value="">コスト: 指定なし</option>
-                  {costValues.map((v) => (
-                    <option key={v} value={v}>コスト{v}</option>
-                  ))}
-                </select>
-                {/* マッチ枚数表示 */}
+              <div className={styles.attrBlock}>
+                <div className={styles.attrField}>
+                  <span className={styles.attrFieldLabel}>タイプ</span>
+                  <select
+                    className={styles.attrSelect}
+                    value={item.filterCardType ?? ''}
+                    onChange={(e) =>
+                      updateItem(idx, {
+                        filterCardType: e.target.value ? (e.target.value as CardType) : undefined,
+                      })
+                    }
+                  >
+                    <option value="">指定なし</option>
+                    {CARD_TYPES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.attrField}>
+                  <span className={styles.attrFieldLabel}>色</span>
+                  <select
+                    className={styles.attrSelect}
+                    value={item.filterColor ?? ''}
+                    onChange={(e) =>
+                      updateItem(idx, {
+                        filterColor: e.target.value ? (e.target.value as CardColor) : undefined,
+                      })
+                    }
+                  >
+                    <option value="">指定なし</option>
+                    {CARD_COLORS.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.attrField}>
+                  <span className={styles.attrFieldLabel}>レベル</span>
+                  <select
+                    className={styles.attrSelect}
+                    value={item.filterLevel ?? ''}
+                    onChange={(e) =>
+                      updateItem(idx, {
+                        filterLevel: e.target.value !== '' ? Number(e.target.value) : undefined,
+                      })
+                    }
+                  >
+                    <option value="">指定なし</option>
+                    {levelValues.map((v) => (
+                      <option key={v} value={v}>Lv{v}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.attrField}>
+                  <span className={styles.attrFieldLabel}>コスト</span>
+                  <select
+                    className={styles.attrSelect}
+                    value={item.filterCost ?? ''}
+                    onChange={(e) =>
+                      updateItem(idx, {
+                        filterCost: e.target.value !== '' ? Number(e.target.value) : undefined,
+                      })
+                    }
+                  >
+                    <option value="">指定なし</option>
+                    {costValues.map((v) => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+                </div>
                 {isItemComplete(item) && (
-                  <span className={styles.attrCount}>デッキ {attrMatchCount(item)} 枚</span>
+                  <div className={styles.attrMatch}>
+                    <span className={styles.attrMatchLabel}>対象</span>
+                    <span className={styles.attrMatchValue}>{attrMatchCount(item)} 枚</span>
+                  </div>
                 )}
               </div>
             )}

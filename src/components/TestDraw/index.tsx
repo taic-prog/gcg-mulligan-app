@@ -5,12 +5,16 @@ import type { Card, MultiSimulationStats } from '../../types';
 import ComboProbabilityList from '../common/ComboProbabilityList';
 import HandDisplay from './HandDisplay';
 import HandSummary from './HandSummary';
+import ManualHandSelector from './ManualHandSelector';
 import MulliganButton from './MulliganButton';
 import SimulationButtons from './SimulationButtons';
 import styles from './TestDraw.module.css';
 
+type DrawMode = 'random' | 'manual';
+
 export default function TestDraw() {
   const { activeDeck } = useDeckStoreCtx();
+  const [drawMode, setDrawMode] = useState<DrawMode>('random');
   const [initialHand, setInitialHand] = useState<Card[] | null>(null);
   const [mulliganHand, setMulliganHand] = useState<Card[] | null>(null);
   const [mulliganUsed, setMulliganUsed] = useState(false);
@@ -20,9 +24,28 @@ export default function TestDraw() {
   const total = activeDeck?.entries.reduce((s, e) => s + e.count, 0) ?? 0;
   const ready = activeDeck !== null && total === 50;
 
+  function clearHand() {
+    setInitialHand(null);
+    setMulliganHand(null);
+    setMulliganUsed(false);
+    setSimStats(null);
+  }
+
+  function switchMode(mode: DrawMode) {
+    setDrawMode(mode);
+    clearHand();
+  }
+
   function handleDraw() {
     if (!activeDeck) return;
     setInitialHand(drawHand(activeDeck.entries));
+    setMulliganHand(null);
+    setMulliganUsed(false);
+    setSimStats(null);
+  }
+
+  function handleManualConfirm(hand: Card[]) {
+    setInitialHand(hand);
     setMulliganHand(null);
     setMulliganUsed(false);
     setSimStats(null);
@@ -66,10 +89,41 @@ export default function TestDraw() {
     <div className={styles.layout}>
       <div className={styles.card}>
         <p className={styles.cardTitle}>テストドロー</p>
-        <div className={styles.drawActions}>
-          <button className={styles.btnDraw} onClick={handleDraw}>新たにドロー</button>
-          {initialHand && <MulliganButton used={mulliganUsed} onClick={handleMulligan} />}
+
+        {/* モード切り替え */}
+        <div className={styles.modeToggle}>
+          <button
+            className={drawMode === 'random' ? styles.modeActive : styles.modeBtn}
+            onClick={() => switchMode('random')}
+          >
+            ランダム
+          </button>
+          <button
+            className={drawMode === 'manual' ? styles.modeActive : styles.modeBtn}
+            onClick={() => switchMode('manual')}
+          >
+            手動設定
+          </button>
         </div>
+
+        {/* ランダムモード：ドローボタン */}
+        {drawMode === 'random' && (
+          <div className={styles.drawActions}>
+            <button className={styles.btnDraw} onClick={handleDraw}>新たにドロー</button>
+            {initialHand && <MulliganButton used={mulliganUsed} onClick={handleMulligan} />}
+          </div>
+        )}
+
+        {/* 手動モード：カード選択 or 再選択ボタン */}
+        {drawMode === 'manual' && !initialHand && (
+          <ManualHandSelector entries={activeDeck.entries} onConfirm={handleManualConfirm} />
+        )}
+        {drawMode === 'manual' && initialHand && (
+          <div className={styles.drawActions}>
+            <button className={styles.btnDraw} onClick={clearHand}>再選択</button>
+            <MulliganButton used={mulliganUsed} onClick={handleMulligan} />
+          </div>
+        )}
 
         {initialHand && (
           <>

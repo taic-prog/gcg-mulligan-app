@@ -10,6 +10,28 @@
 
 .cardTitle { font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .04em; }
 
+.modeToggle { display: flex; gap: 4px; margin-bottom: 14px; }
+.modeBtn {
+  font-size: 12px;
+  padding: 5px 16px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  border-radius: 20px;
+  cursor: pointer;
+}
+.modeBtn:hover { background: var(--border); }
+.modeActive {
+  font-size: 12px;
+  padding: 5px 16px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: #fff;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
 .drawActions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
 .btnDraw { background: var(--primary); color: #fff; font-weight: 600; padding: 8px 20px; }
 .btnDraw:hover:not(:disabled) { background: var(--primary-dark); }
