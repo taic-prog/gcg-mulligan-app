@@ -16,11 +16,15 @@ interface FormState {
   cost: string;
   count: string;
   isKeyCard: boolean;
+  terrain: string;
+  feature: string;
+  link: string;
 }
 
 const INIT: FormState = {
   cardNo: '', name: '', cardType: 'ユニット', color: '青',
   level: '1', cost: '1', count: '1', isKeyCard: false,
+  terrain: '', feature: '', link: '',
 };
 
 interface Props {
@@ -51,6 +55,9 @@ export default function CardForm({ entries, onAdd }: Props) {
         color: info.color,
         level: String(info.level),
         cost: String(info.cost),
+        terrain: info.terrain,
+        feature: info.feature,
+        link: info.link,
       }));
     } catch {
       setFetchError('カード情報の取得に失敗しました');
@@ -98,6 +105,9 @@ export default function CardForm({ entries, onAdd }: Props) {
       level,
       cost,
       isKeyCard: form.isKeyCard,
+      ...(form.terrain ? { terrain: form.terrain } : {}),
+      ...(form.feature ? { feature: form.feature } : {}),
+      ...(form.link ? { link: form.link } : {}),
     };
     onAdd({ card, count });
     setForm(INIT);
@@ -156,6 +166,18 @@ export default function CardForm({ entries, onAdd }: Props) {
         <div className={styles.checkRow}>
           <input type="checkbox" id="isKeyCard" checked={form.isKeyCard} onChange={(e) => set('isKeyCard', e.target.checked)} />
           <label htmlFor="isKeyCard">キーカード</label>
+        </div>
+        <div className={styles.formFull}>
+          <label>地形</label>
+          <input value={form.terrain} onChange={(e) => set('terrain', e.target.value)} placeholder="例: 宇宙 地球" />
+        </div>
+        <div className={styles.formFull}>
+          <label>特徴</label>
+          <input value={form.feature} onChange={(e) => set('feature', e.target.value)} placeholder="例: 〔地球連邦〕 〔WB隊〕" />
+        </div>
+        <div className={styles.formFull}>
+          <label>リンク</label>
+          <input value={form.link} onChange={(e) => set('link', e.target.value)} placeholder="例: 「アムロ・レイ」" />
         </div>
       </div>
       {errors.length > 0 && (

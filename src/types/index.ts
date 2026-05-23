@@ -10,6 +10,9 @@ export interface Card {
   level: number;
   cost: number;
   isKeyCard: boolean;
+  terrain?: string;  // 地形（例: "宇宙 地球"）
+  feature?: string;  // 特徴（例: "〔地球連邦〕 〔WB隊〕"）
+  link?: string;     // リンク（例: "「アムロ・レイ」"）
 }
 
 export interface DeckEntry {
