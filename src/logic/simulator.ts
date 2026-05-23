@@ -1,4 +1,4 @@
-import type { Card, DeckEntry, MultiSimulationStats, SimulationResult } from '../types';
+import type { Card, DeckEntry, MultiSimulationStats, PlayabilityStats, SimulationResult } from '../types';
 
 const HAND_SIZE = 5;
 
@@ -38,6 +38,91 @@ export function simulateMulligan(entries: DeckEntry[]): SimulationResult {
     totalCost,
     containsKeyCard,
     mulliganCount: 1,
+  };
+}
+
+// 手札から合計コストが target になるサブセットを取り出し残りの手札を返す
+// 存在しない場合は null を返す（コスト 0 のカードは計算に含めない）
+function removeSubsetSummingTo(hand: Card[], target: number): Card[] | null {
+  const n = hand.length;
+
+  function rec(idx: number, remaining: number): number[] | null {
+    if (remaining === 0) return [];
+    if (idx >= n || remaining < 0) return null;
+    const cost = hand[idx].cost;
+    if (cost > 0 && cost <= remaining) {
+      const found = rec(idx + 1, remaining - cost);
+      if (found !== null) return [idx, ...found];
+    }
+    return rec(idx + 1, remaining);
+  }
+
+  const used = rec(0, target);
+  if (used === null) return null;
+  const usedSet = new Set(used);
+  return hand.filter((_, i) => !usedSet.has(i));
+}
+
+// 1〜3ターンの初動安定率をシミュレーションで算出する
+// 各ターン開始時に1枚ドロー。cost=ターン番号 のカードをプレイできるか判定する
+// multiCardMode=true のとき、複数枚の合計コストでもターンコストを満たせる
+export function simulatePlayability(
+  entries: DeckEntry[],
+  multiCardMode = false,
+  trials = 10000,
+): PlayabilityStats {
+  const baseDeck = expandDeck(entries);
+  let t1Hits = 0, t2Hits = 0, t3Hits = 0, allHits = 0;
+
+  for (let i = 0; i < trials; i++) {
+    const deck = fisherYatesShuffle(baseDeck);
+    let hand: Card[] = deck.slice(0, 5);
+    let ptr = 5;
+
+    // ターン1: 1枚ドロー、cost=1 を払えればプレイ
+    hand.push(deck[ptr++]);
+    let t1: boolean;
+    if (multiCardMode) {
+      const next = removeSubsetSummingTo(hand, 1);
+      t1 = next !== null;
+      if (t1) hand = next!;
+    } else {
+      const idx = hand.findIndex((c) => c.cost === 1);
+      t1 = idx !== -1;
+      if (t1) hand.splice(idx, 1);
+    }
+
+    // ターン2: 1枚ドロー、cost=2 を払えればプレイ
+    hand.push(deck[ptr++]);
+    let t2: boolean;
+    if (multiCardMode) {
+      const next = removeSubsetSummingTo(hand, 2);
+      t2 = next !== null;
+      if (t2) hand = next!;
+    } else {
+      const idx = hand.findIndex((c) => c.cost === 2);
+      t2 = idx !== -1;
+      if (t2) hand.splice(idx, 1);
+    }
+
+    // ターン3: 1枚ドロー、cost=3 を払えるか確認
+    hand.push(deck[ptr++]);
+    const t3 = multiCardMode
+      ? removeSubsetSummingTo(hand, 3) !== null
+      : hand.some((c) => c.cost === 3);
+
+    if (t1) t1Hits++;
+    if (t2) t2Hits++;
+    if (t3) t3Hits++;
+    if (t1 && t2 && t3) allHits++;
+  }
+
+  return {
+    turn1Rate: t1Hits / trials,
+    turn2Rate: t2Hits / trials,
+    turn3Rate: t3Hits / trials,
+    allTurnsRate: allHits / trials,
+    trialCount: trials,
   };
 }
 

@@ -54,6 +54,14 @@ export interface SimulationResult {
   mulliganCount: number;
 }
 
+export interface PlayabilityStats {
+  turn1Rate: number;    // T1: cost=1 を手札に引けた確率
+  turn2Rate: number;    // T2: cost=2 を手札に引けた確率
+  turn3Rate: number;    // T3: cost=3 を手札に引けた確率
+  allTurnsRate: number; // T1〜T3 すべてコスト通りに動けた確率
+  trialCount: number;
+}
+
 export interface MultiSimulationStats {
   trialCount: number;
   averageCost: number;
@@ -63,12 +71,18 @@ export interface MultiSimulationStats {
   comboHitRate?: number;
 }
 
-export type ComboConditionType = 'card' | 'cost' | 'level';
+export type ComboConditionType = 'card' | 'attr' | 'keycard';
 
 export interface ComboConditionItem {
   type: ComboConditionType;
-  cardId?: string;     // type === 'card' のとき使用
-  attrValue?: number;  // type === 'cost' | 'level' のとき使用
+  // 'card' タイプ
+  cardId?: string;
+  // 'attr' タイプ（すべて省略可能、少なくとも1つ指定する）
+  filterCardType?: CardType;
+  filterColor?: CardColor;
+  filterLevel?: number;
+  filterCost?: number;
+  // 共通
   minCount: number;
 }
 

@@ -133,6 +133,7 @@ export default function TestDraw() {
         entries={activeDeck.entries}
         initialHand={initialHand ?? undefined}
         currentHand={mulliganHand ?? initialHand ?? undefined}
+        mulliganOnly
       />
     </div>
   );

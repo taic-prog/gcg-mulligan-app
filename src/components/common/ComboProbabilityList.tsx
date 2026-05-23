@@ -10,8 +10,9 @@ import styles from './ComboProbabilityList.module.css';
 interface Props {
   combos: SavedCombo[];
   entries: DeckEntry[];
-  initialHand?: Card[];  // 引いた初期手札（残り枚数でマリガン確率を計算）
-  currentHand?: Card[];  // コンボ成立判定に使う手札
+  initialHand?: Card[];    // 引いた初期手札（残り枚数でマリガン確率を計算）
+  currentHand?: Card[];    // コンボ成立判定に使う手札
+  mulliganOnly?: boolean;  // マリガン後確率のみ表示（初期手札確率を非表示）
 }
 
 interface RowProps {
@@ -19,9 +20,10 @@ interface RowProps {
   entries: DeckEntry[];
   remainingEntries: DeckEntry[] | null;
   currentHand?: Card[];
+  mulliganOnly?: boolean;
 }
 
-function ComboRow({ combo, entries, remainingEntries, currentHand }: RowProps) {
+function ComboRow({ combo, entries, remainingEntries, currentHand, mulliganOnly }: RowProps) {
   const result = useMemo(
     () => calculateComboProbability(entries, combo.condition),
     [entries, combo]
@@ -59,12 +61,14 @@ function ComboRow({ combo, entries, remainingEntries, currentHand }: RowProps) {
         )}
       </div>
       <div className={styles.probRow}>
-        <div className={styles.probItem}>
-          <span className={styles.probLabel}>初期手札</span>
-          <span className={styles.probValue}>
-            {result ? `${(result.probInitialHand * 100).toFixed(2)}%` : '—'}
-          </span>
-        </div>
+        {!mulliganOnly && (
+          <div className={styles.probItem}>
+            <span className={styles.probLabel}>初期手札</span>
+            <span className={styles.probValue}>
+              {result ? `${(result.probInitialHand * 100).toFixed(2)}%` : '—'}
+            </span>
+          </div>
+        )}
         <div className={styles.probItem}>
           <span className={styles.probLabel}>{mulliganLabel}</span>
           <span className={styles.probValue}>
@@ -76,7 +80,7 @@ function ComboRow({ combo, entries, remainingEntries, currentHand }: RowProps) {
   );
 }
 
-export default function ComboProbabilityList({ combos, entries, initialHand, currentHand }: Props) {
+export default function ComboProbabilityList({ combos, entries, initialHand, currentHand, mulliganOnly }: Props) {
   const remainingEntries = useMemo(
     () => (initialHand ? computeRemainingEntries(entries, initialHand) : null),
     [entries, initialHand]
@@ -102,6 +106,7 @@ export default function ComboProbabilityList({ combos, entries, initialHand, cur
             entries={entries}
             remainingEntries={remainingEntries}
             currentHand={currentHand}
+            mulliganOnly={mulliganOnly}
           />
         ))}
       </div>

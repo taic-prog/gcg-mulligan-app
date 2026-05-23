@@ -6,6 +6,7 @@ import CostDistributionChart from './CostDistributionChart';
 import ExpectedValueCard from './ExpectedValueCard';
 import KeyCardProbabilityCard from './KeyCardProbabilityCard';
 import MulliganNote from './MulliganNote';
+import PlayabilityCard from './PlayabilityCard';
 import styles from './Dashboard.module.css';
 
 export default function Dashboard() {
@@ -49,7 +50,7 @@ export default function Dashboard() {
       <ExpectedValueCard result={result} />
       <MulliganNote result={result} />
       <div className={styles.wide}>
-        <CostDistributionChart distribution={result.costDistribution} />
+        <PlayabilityCard entries={activeDeck.entries} />
       </div>
       {keyProb && (
         <div className={styles.wide}>
@@ -58,6 +59,9 @@ export default function Dashboard() {
       )}
       <div className={styles.wide}>
         <ComboProbabilityList combos={activeDeck.combos} entries={activeDeck.entries} />
+      </div>
+      <div className={styles.wide}>
+        <CostDistributionChart distribution={result.costDistribution} />
       </div>
     </div>
   );

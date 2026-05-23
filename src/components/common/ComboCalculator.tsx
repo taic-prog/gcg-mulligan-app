@@ -6,6 +6,8 @@ import {
 } from '../../logic/calculator';
 import type {
   Card,
+  CardColor,
+  CardType,
   ComboCondition,
   ComboConditionItem,
   ComboConditionType,
@@ -13,6 +15,9 @@ import type {
   DeckEntry,
 } from '../../types';
 import styles from './ComboCalculator.module.css';
+
+const CARD_TYPES: CardType[] = ['ユニット', 'パイロット', 'コマンド', 'ベース'];
+const CARD_COLORS: CardColor[] = ['青', '緑', '赤', '紫', '白'];
 
 interface Props {
   entries: DeckEntry[];
@@ -25,7 +30,14 @@ interface Props {
 
 function isItemComplete(item: ComboConditionItem): boolean {
   if (item.type === 'card') return !!item.cardId;
-  return item.attrValue !== undefined;
+  if (item.type === 'keycard') return true;
+  // 'attr': 少なくとも1つのフィルタが指定されていること
+  return (
+    item.filterCardType !== undefined ||
+    item.filterColor !== undefined ||
+    item.filterLevel !== undefined ||
+    item.filterCost !== undefined
+  );
 }
 
 export default function ComboCalculator({
@@ -108,18 +120,30 @@ export default function ComboCalculator({
     );
   }
 
+  // attr タイプで属性フィルタにマッチするデッキ内枚数
+  function attrMatchCount(item: ComboConditionItem): number {
+    return entries
+      .filter(
+        (e) =>
+          (item.filterCardType === undefined || e.card.cardType === item.filterCardType) &&
+          (item.filterColor === undefined || e.card.color === item.filterColor) &&
+          (item.filterLevel === undefined || e.card.level === item.filterLevel) &&
+          (item.filterCost === undefined || e.card.cost === item.filterCost) &&
+          !usedCardIds.has(e.card.id)
+      )
+      .reduce((s, e) => s + e.count, 0);
+  }
+
   function maxMinCount(item: ComboConditionItem): number {
     if (item.type === 'card') {
       const entry = entries.find((e) => e.card.id === item.cardId);
       return Math.min(entry?.count ?? 4, 5);
-    } else if (item.type === 'cost') {
-      const total = entries
-        .filter((e) => e.card.cost === item.attrValue && !usedCardIds.has(e.card.id))
-        .reduce((s, e) => s + e.count, 0);
-      return Math.min(total || 5, 5);
+    } else if (item.type === 'attr') {
+      return Math.min(attrMatchCount(item) || 5, 5);
     } else {
+      // keycard
       const total = entries
-        .filter((e) => e.card.level === item.attrValue && !usedCardIds.has(e.card.id))
+        .filter((e) => e.card.isKeyCard && !usedCardIds.has(e.card.id))
         .reduce((s, e) => s + e.count, 0);
       return Math.min(total || 5, 5);
     }
@@ -165,8 +189,8 @@ export default function ComboCalculator({
               onChange={(e) => updateItem(idx, { type: e.target.value as ComboConditionType })}
             >
               <option value="card">カード指定</option>
-              <option value="cost">コスト指定</option>
-              <option value="level">レベル指定</option>
+              <option value="attr">属性指定</option>
+              <option value="keycard">キーカード</option>
             </select>
 
             {/* カード選択 */}
@@ -187,46 +211,81 @@ export default function ComboCalculator({
               </select>
             )}
 
-            {/* コスト値選択 */}
-            {item.type === 'cost' && (
-              <select
-                className={styles.valueSelect}
-                value={item.attrValue ?? ''}
-                onChange={(e) => updateItem(idx, { attrValue: Number(e.target.value) })}
-              >
-                <option value="" disabled>コストを選択...</option>
-                {costValues.map((v) => {
-                  const total = entries
-                    .filter((e) => e.card.cost === v)
-                    .reduce((s, e) => s + e.count, 0);
-                  return (
-                    <option key={v} value={v}>
-                      コスト{v}（デッキ{total}枚）
-                    </option>
-                  );
-                })}
-              </select>
+            {/* 属性指定（タイプ・色・Lv・コストを任意組み合わせ） */}
+            {item.type === 'attr' && (
+              <div className={styles.attrGroup}>
+                {/* タイプ */}
+                <select
+                  className={styles.attrSelect}
+                  value={item.filterCardType ?? ''}
+                  onChange={(e) =>
+                    updateItem(idx, {
+                      filterCardType: e.target.value ? (e.target.value as CardType) : undefined,
+                    })
+                  }
+                >
+                  <option value="">タイプ: 指定なし</option>
+                  {CARD_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                {/* 色 */}
+                <select
+                  className={styles.attrSelect}
+                  value={item.filterColor ?? ''}
+                  onChange={(e) =>
+                    updateItem(idx, {
+                      filterColor: e.target.value ? (e.target.value as CardColor) : undefined,
+                    })
+                  }
+                >
+                  <option value="">色: 指定なし</option>
+                  {CARD_COLORS.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                {/* レベル */}
+                <select
+                  className={styles.attrSelect}
+                  value={item.filterLevel ?? ''}
+                  onChange={(e) =>
+                    updateItem(idx, {
+                      filterLevel: e.target.value !== '' ? Number(e.target.value) : undefined,
+                    })
+                  }
+                >
+                  <option value="">Lv: 指定なし</option>
+                  {levelValues.map((v) => (
+                    <option key={v} value={v}>Lv{v}</option>
+                  ))}
+                </select>
+                {/* コスト */}
+                <select
+                  className={styles.attrSelect}
+                  value={item.filterCost ?? ''}
+                  onChange={(e) =>
+                    updateItem(idx, {
+                      filterCost: e.target.value !== '' ? Number(e.target.value) : undefined,
+                    })
+                  }
+                >
+                  <option value="">コスト: 指定なし</option>
+                  {costValues.map((v) => (
+                    <option key={v} value={v}>コスト{v}</option>
+                  ))}
+                </select>
+                {/* マッチ枚数表示 */}
+                {isItemComplete(item) && (
+                  <span className={styles.attrCount}>デッキ {attrMatchCount(item)} 枚</span>
+                )}
+              </div>
             )}
 
-            {/* レベル値選択 */}
-            {item.type === 'level' && (
-              <select
-                className={styles.valueSelect}
-                value={item.attrValue ?? ''}
-                onChange={(e) => updateItem(idx, { attrValue: Number(e.target.value) })}
-              >
-                <option value="" disabled>レベルを選択...</option>
-                {levelValues.map((v) => {
-                  const total = entries
-                    .filter((e) => e.card.level === v)
-                    .reduce((s, e) => s + e.count, 0);
-                  return (
-                    <option key={v} value={v}>
-                      レベル{v}（デッキ{total}枚）
-                    </option>
-                  );
-                })}
-              </select>
+            {/* キーカード（値選択なし・デッキ内枚数を表示） */}
+            {item.type === 'keycard' && (
+              <span className={styles.keycardInfo}>
+                デッキ内 {entries.filter((e) => e.card.isKeyCard).reduce((s, e) => s + e.count, 0)} 枚
+              </span>
             )}
 
             {/* 最小枚数選択 */}
@@ -277,7 +336,7 @@ export default function ComboCalculator({
       )}
 
       {items.length === 0 && (
-        <p className={styles.hint}>「＋ 条件を追加」でカード・コスト・レベルを指定してください</p>
+        <p className={styles.hint}>「＋ 条件を追加」でカード・属性・キーカードを指定してください</p>
       )}
     </div>
   );

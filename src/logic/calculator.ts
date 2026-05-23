@@ -96,10 +96,17 @@ export function checkComboCondition(hand: Card[], condition: ComboCondition): bo
   const check = (item: ComboConditionItem): boolean => {
     if (item.type === 'card') {
       return hand.filter((c) => c.id === item.cardId).length >= item.minCount;
-    } else if (item.type === 'cost') {
-      return hand.filter((c) => c.cost === item.attrValue).length >= item.minCount;
+    } else if (item.type === 'attr') {
+      return hand.filter(
+        (c) =>
+          (item.filterCardType === undefined || c.cardType === item.filterCardType) &&
+          (item.filterColor === undefined || c.color === item.filterColor) &&
+          (item.filterLevel === undefined || c.level === item.filterLevel) &&
+          (item.filterCost === undefined || c.cost === item.filterCost)
+      ).length >= item.minCount;
     } else {
-      return hand.filter((c) => c.level === item.attrValue).length >= item.minCount;
+      // keycard
+      return hand.filter((c) => c.isKeyCard).length >= item.minCount;
     }
   };
   return condition.logic === 'AND'
@@ -168,16 +175,29 @@ export function calculateComboProbability(
         const entry = entries.find((e) => e.card.id === item.cardId);
         if (!entry) return null;
         return { deckCount: entry.count, minCount: item.minCount };
-      } else if (item.type === 'cost') {
-        if (item.attrValue === undefined) return null;
+      } else if (item.type === 'attr') {
+        // 少なくとも1つのフィルタが指定されていなければ無効
+        if (
+          item.filterCardType === undefined &&
+          item.filterColor === undefined &&
+          item.filterLevel === undefined &&
+          item.filterCost === undefined
+        ) return null;
         const deckCount = entries
-          .filter((e) => e.card.cost === item.attrValue && !specifiedCardIds.has(e.card.id))
+          .filter(
+            (e) =>
+              (item.filterCardType === undefined || e.card.cardType === item.filterCardType) &&
+              (item.filterColor === undefined || e.card.color === item.filterColor) &&
+              (item.filterLevel === undefined || e.card.level === item.filterLevel) &&
+              (item.filterCost === undefined || e.card.cost === item.filterCost) &&
+              !specifiedCardIds.has(e.card.id)
+          )
           .reduce((s, e) => s + e.count, 0);
         return { deckCount, minCount: item.minCount };
       } else {
-        if (item.attrValue === undefined) return null;
+        // keycard
         const deckCount = entries
-          .filter((e) => e.card.level === item.attrValue && !specifiedCardIds.has(e.card.id))
+          .filter((e) => e.card.isKeyCard && !specifiedCardIds.has(e.card.id))
           .reduce((s, e) => s + e.count, 0);
         return { deckCount, minCount: item.minCount };
       }
