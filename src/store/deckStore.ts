@@ -101,6 +101,7 @@ export interface DeckStore {
   updateEntry: (cardId: string, count: number) => void;
   updateCard: (cardId: string, cardData: Partial<Card>) => void;
   removeEntry: (cardId: string) => void;
+  importEntries: (entries: DeckEntry[]) => void;
   addCombo: (combo: Omit<SavedCombo, 'id'>) => void;
   updateCombo: (comboId: string, data: Partial<Pick<SavedCombo, 'name' | 'condition'>>) => void;
   deleteCombo: (comboId: string) => void;
@@ -182,6 +183,15 @@ export function useDeckStore(): DeckStore {
     [activeDeckId]
   );
 
+  const handleImportEntries = useCallback(
+    (entries: DeckEntry[]) => {
+      if (!activeDeckId) return;
+      const updated = updateDeck(activeDeckId, { entries });
+      if (updated) setDecks((prev) => prev.map((d) => (d.id === activeDeckId ? updated : d)));
+    },
+    [activeDeckId]
+  );
+
   const handleAddCombo = useCallback(
     (combo: Omit<SavedCombo, 'id'>) => {
       if (!activeDeckId) return;
@@ -231,6 +241,7 @@ export function useDeckStore(): DeckStore {
     updateEntry: handleUpdateEntry,
     updateCard: handleUpdateCard,
     removeEntry: handleRemoveEntry,
+    importEntries: handleImportEntries,
     addCombo: handleAddCombo,
     updateCombo: handleUpdateCombo,
     deleteCombo: handleDeleteCombo,

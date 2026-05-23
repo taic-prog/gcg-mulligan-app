@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { useDeckStoreCtx } from '../../store/DeckStoreContext';
 import CardForm from './CardForm';
 import ComboManager from './ComboManager';
+import DeckImportModal from './DeckImportModal';
 import DeckList from './DeckList';
 import DeckSummary from './DeckSummary';
 import styles from './DeckEditor.module.css';
 
 export default function DeckEditor() {
   const { decks, activeDeck, setActiveDeck, saveNewDeck, deleteDeck, renameDeck,
-          addEntry, updateEntry, updateCard, removeEntry } = useDeckStoreCtx();
+          addEntry, updateEntry, updateCard, removeEntry, importEntries } = useDeckStoreCtx();
+  const [showImport, setShowImport] = useState(false);
 
   function handleNewDeck() {
     const deck = saveNewDeck({ name: '新デッキ', entries: [] });
@@ -26,6 +29,13 @@ export default function DeckEditor() {
   }
 
   return (
+    <>
+    {showImport && activeDeck && (
+      <DeckImportModal
+        onImport={importEntries}
+        onClose={() => setShowImport(false)}
+      />
+    )}
     <div className={styles.layout}>
       {/* 左ペイン: デッキ一覧 + カードリスト */}
       <div className={styles.panel}>
@@ -49,6 +59,11 @@ export default function DeckEditor() {
           <button className={styles.btnNew} onClick={handleNewDeck} disabled={decks.length >= 5}>
             ＋新規
           </button>
+          {activeDeck && (
+            <button className={styles.btnImport} onClick={() => setShowImport(true)}>
+              インポート
+            </button>
+          )}
           {activeDeck && (
             <button className={styles.btnDel} onClick={() => deleteDeck(activeDeck.id)}>
               削除
@@ -82,5 +97,6 @@ export default function DeckEditor() {
         )}
       </div>
     </div>
+    </>
   );
 }

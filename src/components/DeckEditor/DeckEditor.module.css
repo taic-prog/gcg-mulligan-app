@@ -21,6 +21,8 @@
 .deckName { flex: 1; min-width: 120px; font-weight: 600; }
 .btnNew { background: var(--primary); color: #fff; white-space: nowrap; }
 .btnNew:hover { background: var(--primary-dark); }
+.btnImport { background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
+.btnImport:hover { background: var(--border); }
 .btnDel { background: #fee2e2; color: var(--error); white-space: nowrap; }
 .btnDel:hover { background: #fecaca; }
 
