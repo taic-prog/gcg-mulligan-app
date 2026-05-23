@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { exportDeckText } from '../../logic/deckExport';
 import { useDeckStoreCtx } from '../../store/DeckStoreContext';
 import CardForm from './CardForm';
 import ComboManager from './ComboManager';
+import DeckExportModal from './DeckExportModal';
 import DeckImportModal from './DeckImportModal';
 import DeckList from './DeckList';
 import DeckSummary from './DeckSummary';
@@ -11,6 +13,7 @@ export default function DeckEditor() {
   const { decks, activeDeck, setActiveDeck, saveNewDeck, deleteDeck, renameDeck,
           addEntry, updateEntry, updateCard, removeEntry, importEntries } = useDeckStoreCtx();
   const [showImport, setShowImport] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   function handleNewDeck() {
     const deck = saveNewDeck({ name: '新デッキ', entries: [] });
@@ -34,6 +37,12 @@ export default function DeckEditor() {
       <DeckImportModal
         onImport={importEntries}
         onClose={() => setShowImport(false)}
+      />
+    )}
+    {showExport && activeDeck && (
+      <DeckExportModal
+        text={exportDeckText(activeDeck)}
+        onClose={() => setShowExport(false)}
       />
     )}
     <div className={styles.layout}>
@@ -62,6 +71,11 @@ export default function DeckEditor() {
           {activeDeck && (
             <button className={styles.btnImport} onClick={() => setShowImport(true)}>
               インポート
+            </button>
+          )}
+          {activeDeck && (
+            <button className={styles.btnImport} onClick={() => setShowExport(true)}>
+              エクスポート
             </button>
           )}
           {activeDeck && (
