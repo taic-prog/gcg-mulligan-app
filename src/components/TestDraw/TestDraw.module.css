@@ -38,12 +38,37 @@
 
 /* HandDisplay */
 .hand { display: flex; flex-direction: column; gap: 6px; }
-.handCard { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); }
+.handCard { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); overflow: hidden; }
+.handCardMain { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; }
+.handCardMain:hover { background: color-mix(in srgb, var(--border) 40%, transparent); }
 .num { font-size: 12px; color: var(--text-muted); min-width: 16px; }
-.badge { font-size: 10px; padding: 2px 5px; border-radius: 3px; background: #e0e7ff; color: #3730a3; flex-shrink: 0; }
+.badge { font-size: 10px; padding: 2px 5px; border-radius: 3px; white-space: nowrap; flex-shrink: 0; }
+.badge[data-color="青"] { background: #dbeafe; color: #1e40af; }
+.badge[data-color="緑"] { background: #dcfce7; color: #166534; }
+.badge[data-color="赤"] { background: #fee2e2; color: #991b1b; }
+.badge[data-color="紫"] { background: #f3e8ff; color: #6b21a8; }
+.badge[data-color="白"] { background: #f1f5f9; color: #475569; border: 1px solid #94a3b8; }
+:global([data-theme="dark"]) .badge[data-color="青"] { background: #1e3a8a; color: #93c5fd; }
+:global([data-theme="dark"]) .badge[data-color="緑"] { background: #14532d; color: #86efac; }
+:global([data-theme="dark"]) .badge[data-color="赤"] { background: #7f1d1d; color: #fca5a5; }
+:global([data-theme="dark"]) .badge[data-color="紫"] { background: #3b0764; color: #d8b4fe; }
+:global([data-theme="dark"]) .badge[data-color="白"] { background: #1e293b; color: #cbd5e1; border: 1px solid #475569; }
 .keyIcon { color: var(--key); }
 .name { flex: 1; font-weight: 500; }
+.expandArrow { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
+.lv { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
 .cost { font-size: 13px; font-weight: 700; color: var(--primary); }
+.cardDetail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 5px 10px;
+  font-size: 11px;
+  background: var(--bg);
+  border-top: 1px dashed var(--border);
+}
+.detailItem { display: flex; gap: 4px; white-space: nowrap; }
+.detailLabel { color: var(--text-muted); font-weight: 600; }
 
 /* HandSummary */
 .summary { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }

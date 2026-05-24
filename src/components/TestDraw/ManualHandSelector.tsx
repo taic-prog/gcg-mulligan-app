@@ -11,6 +11,7 @@ const HAND_SIZE = 5;
 
 export default function ManualHandSelector({ entries, onConfirm }: Props) {
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const total = Object.values(counts).reduce((s, n) => s + n, 0);
 
@@ -27,6 +28,15 @@ export default function ManualHandSelector({ entries, onConfirm }: Props) {
         return next;
       }
       return { ...prev, [cardId]: n };
+    });
+  }
+
+  function toggleExpand(cardId: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(cardId)) next.delete(cardId);
+      else next.add(cardId);
+      return next;
     });
   }
 
@@ -62,31 +72,67 @@ export default function ManualHandSelector({ entries, onConfirm }: Props) {
       <div className={styles.list}>
         {sortedEntries.map(({ card, count }) => {
           const selected = counts[card.id] ?? 0;
+          const expanded = expandedIds.has(card.id);
+          const hasDetail = !!(card.terrain || card.feature || card.link);
           return (
             <div key={card.id} className={styles.row}>
-              <div className={styles.info}>
-                <span className={styles.cardName}>
-                  {card.isKeyCard && <span className={styles.keyIcon}>★</span>}
-                  {card.name}
-                </span>
-                <span className={styles.meta}>
-                  {card.color}・{card.cardType}・Lv{card.level}・コスト{card.cost}
-                </span>
+              <div className={styles.rowMain}>
+                <div className={styles.info}>
+                  <div className={styles.cardHeader}>
+                    <span className={styles.badge} data-color={card.color}>{card.cardType}</span>
+                    <span className={styles.cardName}>
+                      {card.isKeyCard && <span className={styles.keyIcon}>★</span>}
+                      {card.name}
+                    </span>
+                    {hasDetail && (
+                      <button
+                        type="button"
+                        className={styles.btnExpand}
+                        onClick={() => toggleExpand(card.id)}
+                        title="詳細表示"
+                      >
+                        {expanded ? '▴' : '▾'}
+                      </button>
+                    )}
+                  </div>
+                  <span className={styles.meta}>
+                    {card.cardType}・Lv{card.level}・コスト{card.cost}
+                  </span>
+                </div>
+                <div className={styles.ctrl}>
+                  <span className={styles.deckCount}>×{count}</span>
+                  <button
+                    className={styles.btnAdj}
+                    onClick={() => remove(card.id)}
+                    disabled={selected === 0}
+                  >−</button>
+                  <span className={styles.selected}>{selected}</span>
+                  <button
+                    className={styles.btnAdj}
+                    onClick={() => add(card.id)}
+                    disabled={selected >= count || total >= HAND_SIZE}
+                  >＋</button>
+                </div>
               </div>
-              <div className={styles.ctrl}>
-                <span className={styles.deckCount}>×{count}</span>
-                <button
-                  className={styles.btnAdj}
-                  onClick={() => remove(card.id)}
-                  disabled={selected === 0}
-                >−</button>
-                <span className={styles.selected}>{selected}</span>
-                <button
-                  className={styles.btnAdj}
-                  onClick={() => add(card.id)}
-                  disabled={selected >= count || total >= HAND_SIZE}
-                >＋</button>
-              </div>
+              {expanded && hasDetail && (
+                <div className={styles.cardDetail}>
+                  {card.terrain && (
+                    <span className={styles.detailItem}>
+                      <span className={styles.detailLabel}>地形</span>{card.terrain}
+                    </span>
+                  )}
+                  {card.feature && (
+                    <span className={styles.detailItem}>
+                      <span className={styles.detailLabel}>特徴</span>{card.feature}
+                    </span>
+                  )}
+                  {card.link && (
+                    <span className={styles.detailItem}>
+                      <span className={styles.detailLabel}>リンク</span>{card.link}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}

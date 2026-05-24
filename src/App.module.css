@@ -13,6 +13,18 @@
 
 .title { font-size: 16px; font-weight: 700; color: var(--primary); white-space: nowrap; }
 
+.btnTheme {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 4px 10px;
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.btnTheme:hover { background: var(--border); }
+
 .main { flex: 1; padding: 20px; max-width: 1280px; margin: 0 auto; width: 100%; }
 
 @media (max-width: 600px) {

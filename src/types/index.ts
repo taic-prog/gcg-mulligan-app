@@ -62,6 +62,7 @@ export interface PlayabilityStats {
   turn2Rate: number;    // T2: cost=2 を手札に引けた確率
   turn3Rate: number;    // T3: cost=3 を手札に引けた確率
   allTurnsRate: number; // T1〜T3 すべてコスト通りに動けた確率
+  t2t3Rate: number;     // T2〜T3 のみ（T1不可デッキ向け完走指標）
   trialCount: number;
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { simulateBothPlayabilityModes, simulateCustomPlayability } from '../../logic/simulator';
+import { simulateCustomPlayability, simulatePlayability } from '../../logic/simulator';
 import type { DeckEntry, PlayabilityStats } from '../../types';
 import styles from './PlayabilityCard.module.css';
 
@@ -7,12 +7,22 @@ interface Props {
   entries: DeckEntry[];
 }
 
-function RateItem({ label, rate, highlight }: { label: string; rate: number; highlight?: boolean }) {
+function RateItem({
+  label,
+  rate,
+  highlight,
+  impossible,
+}: {
+  label: string;
+  rate: number;
+  highlight?: boolean;
+  impossible?: boolean;
+}) {
   return (
     <div className={styles.rateItem}>
       <span className={styles.rateLabel}>{label}</span>
-      <span className={`${styles.rateValue} ${highlight ? styles.rateValueHighlight : ''}`}>
-        {(rate * 100).toFixed(1)}%
+      <span className={`${styles.rateValue} ${highlight ? styles.rateValueHighlight : ''} ${impossible ? styles.rateValueImpossible : ''}`}>
+        {impossible ? '−' : `${(rate * 100).toFixed(1)}%`}
       </span>
     </div>
   );
@@ -22,10 +32,8 @@ const TURN_LABELS = ['1ターン目', '2ターン目', '3ターン目'] as const
 const EMPTY_SEL = (): Set<string>[] => [new Set(), new Set(), new Set()];
 
 export default function PlayabilityCard({ entries }: Props) {
-  const [singleStats, setSingleStats] = useState<PlayabilityStats | null>(null);
-  const [multiStats, setMultiStats] = useState<PlayabilityStats | null>(null);
+  const [stats, setStats] = useState<PlayabilityStats | null>(null);
   const [running, setRunning] = useState(true);
-  const [multiCardMode, setMultiCardMode] = useState(false);
 
   const [selPerTurn, setSelPerTurn] = useState<Set<string>[]>(EMPTY_SEL);
   const [customStats, setCustomStats] = useState<PlayabilityStats | null>(null);
@@ -33,12 +41,9 @@ export default function PlayabilityCard({ entries }: Props) {
 
   useEffect(() => {
     setRunning(true);
-    setSingleStats(null);
-    setMultiStats(null);
+    setStats(null);
     const timer = setTimeout(() => {
-      const { single, multi } = simulateBothPlayabilityModes(entries, 10000);
-      setSingleStats(single);
-      setMultiStats(multi);
+      setStats(simulatePlayability(entries, true, 10000));
       setRunning(false);
     }, 0);
     return () => clearTimeout(timer);
@@ -49,7 +54,8 @@ export default function PlayabilityCard({ entries }: Props) {
     setCustomStats(null);
   }, [entries]);
 
-  const stats = multiCardMode ? multiStats : singleStats;
+  // T1に動けるカードがデッキに存在するか（コスト1 かつ Lv≤1）
+  const canPlayT1 = entries.some((e) => e.card.cost === 1 && e.card.level <= 1);
 
   function updateSel(turnIdx: number, id: string, add: boolean) {
     setSelPerTurn((prev) =>
@@ -80,25 +86,21 @@ export default function PlayabilityCard({ entries }: Props) {
     <div className={styles.card}>
       <div className={styles.header}>
         <p className={styles.cardTitle}>初動安定率</p>
-        <span className={styles.note}>各ターン開始時にドロー、コストNのカードをプレイできる確率（10,000試行）</span>
-        <label className={styles.toggle}>
-          <input
-            type="checkbox"
-            checked={multiCardMode}
-            onChange={(e) => setMultiCardMode(e.target.checked)}
-          />
-          コスト合算モード（複数枚の合計コストで動く）
-        </label>
+        <span className={styles.note}>各ターン開始時にドロー、コスト合算でプレイできる確率（10,000試行）</span>
       </div>
 
       {running ? (
         <p className={styles.loading}>計算中…</p>
       ) : stats ? (
         <div className={styles.rateGrid}>
-          <RateItem label="1ターン目（コスト1）" rate={stats.turn1Rate} />
+          <RateItem label="1ターン目（コスト1）" rate={stats.turn1Rate} impossible={!canPlayT1} />
           <RateItem label="2ターン目（コスト2）" rate={stats.turn2Rate} />
           <RateItem label="3ターン目（コスト3）" rate={stats.turn3Rate} />
-          <RateItem label="3ターン完走" rate={stats.allTurnsRate} highlight />
+          <RateItem
+            label={canPlayT1 ? '3ターン完走' : '2〜3ターン完走'}
+            rate={canPlayT1 ? stats.allTurnsRate : stats.t2t3Rate}
+            highlight
+          />
         </div>
       ) : null}
 

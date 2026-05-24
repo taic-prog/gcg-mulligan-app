@@ -83,6 +83,11 @@
   color: var(--primary);
 }
 
+.rateValueImpossible {
+  color: var(--text-muted);
+  font-size: 18px;
+}
+
 /* ターン別カード指定セクション */
 .customSection {
   margin-top: 20px;

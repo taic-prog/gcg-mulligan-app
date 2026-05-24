@@ -73,7 +73,7 @@ export function simulatePlayability(
   trials = 10000,
 ): PlayabilityStats {
   const baseDeck = expandDeck(entries);
-  let t1Hits = 0, t2Hits = 0, t3Hits = 0, allHits = 0;
+  let t1Hits = 0, t2Hits = 0, t3Hits = 0, allHits = 0, t2t3Hits = 0;
 
   for (let i = 0; i < trials; i++) {
     const deck = fisherYatesShuffle(baseDeck);
@@ -113,6 +113,7 @@ export function simulatePlayability(
     if (t2) t2Hits++;
     if (t3) t3Hits++;
     if (t1 && t2 && t3) allHits++;
+    if (t2 && t3) t2t3Hits++;
   }
 
   return {
@@ -120,6 +121,7 @@ export function simulatePlayability(
     turn2Rate: t2Hits / trials,
     turn3Rate: t3Hits / trials,
     allTurnsRate: allHits / trials,
+    t2t3Rate: t2t3Hits / trials,
     trialCount: trials,
   };
 }
@@ -131,8 +133,8 @@ export function simulateBothPlayabilityModes(
   trials = 10000,
 ): { single: PlayabilityStats; multi: PlayabilityStats } {
   const baseDeck = expandDeck(entries);
-  let s1 = 0, s2 = 0, s3 = 0, sAll = 0;
-  let m1 = 0, m2 = 0, m3 = 0, mAll = 0;
+  let s1 = 0, s2 = 0, s3 = 0, sAll = 0, st2t3 = 0;
+  let m1 = 0, m2 = 0, m3 = 0, mAll = 0, mt2t3 = 0;
 
   for (let i = 0; i < trials; i++) {
     const deck = fisherYatesShuffle(baseDeck);
@@ -159,6 +161,7 @@ export function simulateBothPlayabilityModes(
       if (t2) s2++;
       if (t3) s3++;
       if (t1 && t2 && t3) sAll++;
+      if (t2 && t3) st2t3++;
     }
 
     // コスト合算モード（同じ deck 順を使用、Lv ≤ ターン番号のカードのみ使用可能）
@@ -183,20 +186,22 @@ export function simulateBothPlayabilityModes(
       if (t2) m2++;
       if (t3) m3++;
       if (t1 && t2 && t3) mAll++;
+      if (t2 && t3) mt2t3++;
     }
   }
 
-  const make = (t1: number, t2: number, t3: number, all: number): PlayabilityStats => ({
+  const make = (t1: number, t2: number, t3: number, all: number, t2t3: number): PlayabilityStats => ({
     turn1Rate: t1 / trials,
     turn2Rate: t2 / trials,
     turn3Rate: t3 / trials,
     allTurnsRate: all / trials,
+    t2t3Rate: t2t3 / trials,
     trialCount: trials,
   });
 
   return {
-    single: make(s1, s2, s3, sAll),
-    multi: make(m1, m2, m3, mAll),
+    single: make(s1, s2, s3, sAll, st2t3),
+    multi: make(m1, m2, m3, mAll, mt2t3),
   };
 }
 
@@ -209,7 +214,7 @@ export function simulateCustomPlayability(
   trials = 10000,
 ): PlayabilityStats {
   const baseDeck = expandDeck(entries);
-  let t1Hits = 0, t2Hits = 0, t3Hits = 0, allHits = 0;
+  let t1Hits = 0, t2Hits = 0, t3Hits = 0, allHits = 0, t2t3Hits = 0;
 
   for (let i = 0; i < trials; i++) {
     const deck = fisherYatesShuffle(baseDeck);
@@ -236,6 +241,7 @@ export function simulateCustomPlayability(
     if (t2) t2Hits++;
     if (t3) t3Hits++;
     if (t1 && t2 && t3) allHits++;
+    if (t2 && t3) t2t3Hits++;
   }
 
   return {
@@ -243,6 +249,7 @@ export function simulateCustomPlayability(
     turn2Rate: t2Hits / trials,
     turn3Rate: t3Hits / trials,
     allTurnsRate: allHits / trials,
+    t2t3Rate: t2t3Hits / trials,
     trialCount: trials,
   };
 }
