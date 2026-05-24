@@ -43,14 +43,15 @@ export function simulateMulligan(entries: DeckEntry[]): SimulationResult {
 
 // 手札から合計コストが target になるサブセットを取り出し残りの手札を返す
 // 存在しない場合は null を返す（コスト 0 のカードは計算に含めない）
-function removeSubsetSummingTo(hand: Card[], target: number): Card[] | null {
+// maxLevel: そのターンのリソース数（Lv ≤ maxLevel のカードのみ使用可能）
+function removeSubsetSummingTo(hand: Card[], target: number, maxLevel = Infinity): Card[] | null {
   const n = hand.length;
 
   function rec(idx: number, remaining: number): number[] | null {
     if (remaining === 0) return [];
     if (idx >= n || remaining < 0) return null;
-    const cost = hand[idx].cost;
-    if (cost > 0 && cost <= remaining) {
+    const { cost, level } = hand[idx];
+    if (cost > 0 && cost <= remaining && level <= maxLevel) {
       const found = rec(idx + 1, remaining - cost);
       if (found !== null) return [idx, ...found];
     }
@@ -82,11 +83,11 @@ export function simulatePlayability(
     hand.push(deck[ptr++]);
     let t1: boolean;
     if (multiCardMode) {
-      const next = removeSubsetSummingTo(hand, 1);
+      const next = removeSubsetSummingTo(hand, 1, 1);
       t1 = next !== null;
       if (t1) hand = next!;
     } else {
-      const idx = hand.findIndex((c) => c.cost === 1);
+      const idx = hand.findIndex((c) => c.cost === 1 && c.level <= 1);
       t1 = idx !== -1;
       if (t1) hand.splice(idx, 1);
     }
@@ -94,19 +95,19 @@ export function simulatePlayability(
     hand.push(deck[ptr++]);
     let t2: boolean;
     if (multiCardMode) {
-      const next = removeSubsetSummingTo(hand, 2);
+      const next = removeSubsetSummingTo(hand, 2, 2);
       t2 = next !== null;
       if (t2) hand = next!;
     } else {
-      const idx = hand.findIndex((c) => c.cost === 2);
+      const idx = hand.findIndex((c) => c.cost === 2 && c.level <= 2);
       t2 = idx !== -1;
       if (t2) hand.splice(idx, 1);
     }
 
     hand.push(deck[ptr++]);
     const t3 = multiCardMode
-      ? removeSubsetSummingTo(hand, 3) !== null
-      : hand.some((c) => c.cost === 3);
+      ? removeSubsetSummingTo(hand, 3, 3) !== null
+      : hand.some((c) => c.cost === 3 && c.level <= 3);
 
     if (t1) t1Hits++;
     if (t2) t2Hits++;
@@ -136,23 +137,23 @@ export function simulateBothPlayabilityModes(
   for (let i = 0; i < trials; i++) {
     const deck = fisherYatesShuffle(baseDeck);
 
-    // 単体モード
+    // 単体モード（Lv ≤ ターン番号のカードのみ使用可能）
     {
       let hand: Card[] = deck.slice(0, 5);
       let ptr = 5;
 
       hand.push(deck[ptr++]);
-      const idx1 = hand.findIndex((c) => c.cost === 1);
+      const idx1 = hand.findIndex((c) => c.cost === 1 && c.level <= 1);
       const t1 = idx1 !== -1;
       if (t1) hand.splice(idx1, 1);
 
       hand.push(deck[ptr++]);
-      const idx2 = hand.findIndex((c) => c.cost === 2);
+      const idx2 = hand.findIndex((c) => c.cost === 2 && c.level <= 2);
       const t2 = idx2 !== -1;
       if (t2) hand.splice(idx2, 1);
 
       hand.push(deck[ptr++]);
-      const t3 = hand.some((c) => c.cost === 3);
+      const t3 = hand.some((c) => c.cost === 3 && c.level <= 3);
 
       if (t1) s1++;
       if (t2) s2++;
@@ -160,23 +161,23 @@ export function simulateBothPlayabilityModes(
       if (t1 && t2 && t3) sAll++;
     }
 
-    // コスト合算モード（同じ deck 順を使用）
+    // コスト合算モード（同じ deck 順を使用、Lv ≤ ターン番号のカードのみ使用可能）
     {
       let hand: Card[] = deck.slice(0, 5);
       let ptr = 5;
 
       hand.push(deck[ptr++]);
-      const next1 = removeSubsetSummingTo(hand, 1);
+      const next1 = removeSubsetSummingTo(hand, 1, 1);
       const t1 = next1 !== null;
       if (t1) hand = next1!;
 
       hand.push(deck[ptr++]);
-      const next2 = removeSubsetSummingTo(hand, 2);
+      const next2 = removeSubsetSummingTo(hand, 2, 2);
       const t2 = next2 !== null;
       if (t2) hand = next2!;
 
       hand.push(deck[ptr++]);
-      const t3 = removeSubsetSummingTo(hand, 3) !== null;
+      const t3 = removeSubsetSummingTo(hand, 3, 3) !== null;
 
       if (t1) m1++;
       if (t2) m2++;
@@ -196,6 +197,53 @@ export function simulateBothPlayabilityModes(
   return {
     single: make(s1, s2, s3, sAll),
     multi: make(m1, m2, m3, mAll),
+  };
+}
+
+// 各ターンに使いたいカードIDセットを指定して成立確率を算出する
+// turnCardIds[i] が空セットのターンは常に成立（100%）として扱う
+// T1・T2はプレイしたカードを手札から除いて次ターンに引き継ぐ
+export function simulateCustomPlayability(
+  entries: DeckEntry[],
+  turnCardIds: Set<string>[],
+  trials = 10000,
+): PlayabilityStats {
+  const baseDeck = expandDeck(entries);
+  let t1Hits = 0, t2Hits = 0, t3Hits = 0, allHits = 0;
+
+  for (let i = 0; i < trials; i++) {
+    const deck = fisherYatesShuffle(baseDeck);
+    let hand: Card[] = deck.slice(0, 5);
+    let ptr = 5;
+
+    const hits: boolean[] = [];
+    for (let t = 0; t < 3; t++) {
+      hand.push(deck[ptr++]);
+      const ids = turnCardIds[t];
+      const maxLv = t + 1;
+      if (ids.size === 0) {
+        hits.push(true);
+      } else {
+        const idx = hand.findIndex((c) => ids.has(c.id) && c.level <= maxLv);
+        const hit = idx !== -1;
+        hits.push(hit);
+        if (hit && t < 2) hand.splice(idx, 1);
+      }
+    }
+    const [t1, t2, t3] = hits;
+
+    if (t1) t1Hits++;
+    if (t2) t2Hits++;
+    if (t3) t3Hits++;
+    if (t1 && t2 && t3) allHits++;
+  }
+
+  return {
+    turn1Rate: t1Hits / trials,
+    turn2Rate: t2Hits / trials,
+    turn3Rate: t3Hits / trials,
+    allTurnsRate: allHits / trials,
+    trialCount: trials,
   };
 }
 

@@ -82,3 +82,126 @@
 .rateValueHighlight {
   color: var(--primary);
 }
+
+/* ターン別カード指定セクション */
+.customSection {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.customTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin: 0 0 4px 0;
+}
+
+.customNote {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0 0 12px 0;
+}
+
+.turnRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.turnLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding-top: 4px;
+  min-width: 64px;
+}
+
+.turnControl {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.cardSelect {
+  font-size: 12px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  max-width: 260px;
+}
+
+.cardSelect:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.selectedPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.selectedPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--primary);
+}
+
+.pillRemove {
+  border: none;
+  background: none;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.pillRemove:hover {
+  opacity: 1;
+}
+
+.customActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  margin-bottom: 12px;
+}
+
+.btnCalc {
+  padding: 6px 18px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnCalc:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.customHint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
