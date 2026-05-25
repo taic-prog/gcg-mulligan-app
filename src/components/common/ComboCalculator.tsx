@@ -16,8 +16,6 @@ import type {
 } from '../../types';
 import styles from './ComboCalculator.module.css';
 
-const CARD_TYPES: CardType[] = ['ユニット', 'パイロット', 'コマンド', 'ベース'];
-const CARD_COLORS: CardColor[] = ['青', '緑', '赤', '紫', '白'];
 
 interface Props {
   entries: DeckEntry[];
@@ -61,7 +59,15 @@ export default function ComboCalculator({
     [entries]
   );
   const levelValues = useMemo(
-    () => [...new Set([1, ...entries.map((e) => e.card.level)])].sort((a, b) => a - b),
+    () => [...new Set(entries.map((e) => e.card.level))].sort((a, b) => a - b),
+    [entries]
+  );
+  const typeValues = useMemo(
+    () => [...new Set(entries.map((e) => e.card.cardType))] as CardType[],
+    [entries]
+  );
+  const colorValues = useMemo(
+    () => [...new Set(entries.map((e) => e.card.color))] as CardColor[],
     [entries]
   );
 
@@ -226,7 +232,7 @@ export default function ComboCalculator({
                     }
                   >
                     <option value="">指定なし</option>
-                    {CARD_TYPES.map((t) => (
+                    {typeValues.map((t) => (
                       <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
@@ -243,7 +249,7 @@ export default function ComboCalculator({
                     }
                   >
                     <option value="">指定なし</option>
-                    {CARD_COLORS.map((c) => (
+                    {colorValues.map((c) => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
