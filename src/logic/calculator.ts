@@ -109,9 +109,7 @@ export function checkComboCondition(hand: Card[], condition: ComboCondition): bo
       return hand.filter((c) => c.isKeyCard).length >= item.minCount;
     }
   };
-  return condition.logic === 'AND'
-    ? condition.items.every(check)
-    : condition.items.some(check);
+  return condition.items.every(check);
 }
 
 // 初期手札を除いた残りのデッキエントリを返す
@@ -211,24 +209,12 @@ export function calculateComboProbability(
   const otherDeckCount = totalDeck - totalSpecified;
   if (otherDeckCount < 0) return null;
 
-  let probInitialHand: number;
-
-  if (condition.logic === 'AND') {
-    const conds = valid.map(({ deckCount, minCount }) => ({
-      deckCount,
-      minRange: minCount,
-      maxRange: deckCount,
-    }));
-    probInitialHand = enumerateHandProb(conds, otherDeckCount, totalDeck);
-  } else {
-    // P(1つ以上成立) = 1 - P(全条件不成立)
-    const conds = valid.map(({ deckCount, minCount }) => ({
-      deckCount,
-      minRange: 0,
-      maxRange: minCount - 1,
-    }));
-    probInitialHand = 1 - enumerateHandProb(conds, otherDeckCount, totalDeck);
-  }
+  const conds = valid.map(({ deckCount, minCount }) => ({
+    deckCount,
+    minRange: minCount,
+    maxRange: deckCount,
+  }));
+  const probInitialHand = enumerateHandProb(conds, otherDeckCount, totalDeck);
 
   const probAfterMulligan = 1 - (1 - probInitialHand) ** 2;
   return { probInitialHand, probAfterMulligan };

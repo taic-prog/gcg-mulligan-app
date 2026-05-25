@@ -59,7 +59,7 @@ export default function ComboManager() {
               <div className={styles.comboInfo}>
                 <span className={styles.comboName}>{combo.name}</span>
                 <span className={styles.comboMeta}>
-                  {combo.condition.logic === 'AND' ? 'すべて成立' : 'いずれか成立'} ／ {combo.condition.items.length} 条件
+                  すべて成立 ／ {combo.condition.items.length} 条件
                 </span>
               </div>
               <div className={styles.comboActions}>

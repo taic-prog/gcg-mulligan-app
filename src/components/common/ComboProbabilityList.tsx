@@ -52,7 +52,7 @@ function ComboRow({ combo, entries, remainingEntries, currentHand, mulliganOnly 
       <div className={styles.rowHeader}>
         <span className={styles.comboName}>{combo.name}</span>
         <span className={styles.combMeta}>
-          {combo.condition.logic === 'AND' ? 'AND' : 'OR'} / {combo.condition.items.length}条件
+          {combo.condition.items.length}条件
         </span>
         {handMatch !== null && (
           <span className={handMatch ? styles.hitBadge : styles.missBadge}>

@@ -11,7 +11,6 @@ import type {
   ComboCondition,
   ComboConditionItem,
   ComboConditionType,
-  ComboLogic,
   DeckEntry,
 } from '../../types';
 import styles from './ComboCalculator.module.css';
@@ -47,11 +46,10 @@ export default function ComboCalculator({
   onConditionChange,
 }: Props) {
   const [items, setItems] = useState<ComboConditionItem[]>(() => initialCondition?.items ?? []);
-  const [logic, setLogic] = useState<ComboLogic>(() => initialCondition?.logic ?? 'AND');
 
   const condition = useMemo<ComboCondition | null>(
-    () => (items.length > 0 ? { items, logic } : null),
-    [items, logic]
+    () => (items.length > 0 ? { items } : null),
+    [items]
   );
 
   const costValues = useMemo(
@@ -169,20 +167,6 @@ export default function ComboCalculator({
     <div className={styles.card}>
       <div className={styles.header}>
         <p className={styles.cardTitle}>コンボ確率</p>
-        <div className={styles.logicToggle}>
-          <button
-            className={logic === 'AND' ? styles.logicActive : styles.logicBtn}
-            onClick={() => setLogic('AND')}
-          >
-            AND（すべて成立）
-          </button>
-          <button
-            className={logic === 'OR' ? styles.logicActive : styles.logicBtn}
-            onClick={() => setLogic('OR')}
-          >
-            OR（いずれか成立）
-          </button>
-        </div>
       </div>
 
       <div className={styles.itemList}>

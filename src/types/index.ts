@@ -93,11 +93,8 @@ export interface ComboConditionItem {
   minCount: number;
 }
 
-export type ComboLogic = 'AND' | 'OR';
-
 export interface ComboCondition {
   items: ComboConditionItem[];
-  logic: ComboLogic;
 }
 
 export interface ComboProbabilityResult {
