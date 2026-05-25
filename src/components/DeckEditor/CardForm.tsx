@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { getAllCards } from '../../logic/cardCache';
 import { fetchCardInfo } from '../../logic/cardFetch';
+import type { FetchedCardInfo } from '../../logic/cardFetch';
 import { canAddCard, validateCard } from '../../logic/validator';
 import { CARD_COLORS, CARD_TYPES } from '../../types';
 import type { Card, CardColor, CardType, DeckEntry } from '../../types';
@@ -25,6 +27,15 @@ const INIT: FormState = {
   terrain: '', feature: '', link: '',
 };
 
+type CardRecord = FetchedCardInfo & { cardNo: string };
+
+// DBから全件を一度だけロードしてメモリキャッシュ
+let cachedAllCards: CardRecord[] | null = null;
+async function getOrLoadAll(): Promise<CardRecord[]> {
+  if (!cachedAllCards) cachedAllCards = await getAllCards();
+  return cachedAllCards;
+}
+
 interface Props {
   entries: DeckEntry[];
   onAdd: (entry: DeckEntry) => void;
@@ -35,6 +46,9 @@ export default function CardForm({ entries, onAdd }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [fetching, setFetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<CardRecord[]>([]);
+  const [activeIdx, setActiveIdx] = useState(-1);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -62,6 +76,59 @@ export default function CardForm({ entries, onAdd }: Props) {
     } finally {
       setFetching(false);
     }
+  }
+
+  async function handleNameInput(value: string) {
+    set('name', value);
+    setActiveIdx(-1);
+    if (!value.trim()) { setSuggestions([]); return; }
+    const all = await getOrLoadAll();
+    const q = value.toLowerCase();
+    const filtered = all.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 12);
+    setSuggestions(filtered);
+  }
+
+  function applyCard(card: CardRecord) {
+    setForm((prev) => ({
+      ...prev,
+      cardNo: card.cardNo,
+      name: card.name,
+      cardType: card.cardType,
+      color: card.color,
+      level: String(card.level),
+      cost: String(card.cost),
+      terrain: card.terrain,
+      feature: card.feature,
+      link: card.link,
+    }));
+    setSuggestions([]);
+    setActiveIdx(-1);
+  }
+
+  function handleNameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!suggestions.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIdx((i) => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIdx((i) => Math.max(i - 1, -1));
+    } else if (e.key === 'Enter' && activeIdx >= 0) {
+      e.preventDefault();
+      applyCard(suggestions[activeIdx]);
+    } else if (e.key === 'Escape') {
+      setSuggestions([]);
+      setActiveIdx(-1);
+    }
+  }
+
+  function handleNameBlur() {
+    blurTimer.current = setTimeout(() => setSuggestions([]), 150);
+  }
+
+  function handleSuggestionMouseDown(card: CardRecord) {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+    applyCard(card);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -139,7 +206,33 @@ export default function CardForm({ entries, onAdd }: Props) {
         </div>
         <div className={styles.formFull}>
           <label>カード名 *</label>
-          <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="ガンダム" required />
+          <div className={styles.nameWrapper}>
+            <input
+              value={form.name}
+              onChange={(e) => handleNameInput(e.target.value)}
+              onKeyDown={handleNameKeyDown}
+              onBlur={handleNameBlur}
+              placeholder="ガンダム"
+              required
+              autoComplete="off"
+            />
+            {suggestions.length > 0 && (
+              <ul className={styles.suggestions}>
+                {suggestions.map((card, i) => (
+                  <li
+                    key={card.cardNo}
+                    className={`${styles.suggestion} ${i === activeIdx ? styles.suggestionActive : ''}`}
+                    onMouseDown={() => handleSuggestionMouseDown(card)}
+                  >
+                    <span>{card.name}</span>
+                    <span className={styles.suggestionMeta}>
+                      {card.cardNo}・{card.cardType}・{card.color}・Lv{card.level}・C{card.cost}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
         <div>
           <label>タイプ</label>

@@ -56,6 +56,18 @@ export async function putCache(cardNo: string, info: FetchedCardInfo): Promise<v
   });
 }
 
+export async function getAllCards(): Promise<(FetchedCardInfo & { cardNo: string })[]> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
+    req.onsuccess = () => {
+      const rows: CachedCard[] = req.result ?? [];
+      resolve(rows.map(({ cachedAt: _, ...card }) => card));
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
 export async function seedDB(): Promise<void> {
   const res = await fetch(`${import.meta.env.BASE_URL}card-db.json`);
   if (!res.ok) return;

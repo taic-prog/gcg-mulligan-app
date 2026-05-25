@@ -56,6 +56,36 @@
 .btnFetch:disabled { opacity: 0.5; cursor: default; }
 .fetchError { font-size: 11px; color: var(--error); margin-top: 3px; }
 
+/* カード名オートコンプリート */
+.nameWrapper { position: relative; }
+.suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,.14);
+  max-height: 220px;
+  overflow-y: auto;
+  margin-top: 2px;
+}
+.suggestion {
+  padding: 7px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.suggestion:last-child { border-bottom: none; }
+.suggestion:hover { background: color-mix(in srgb, var(--primary) 8%, var(--surface)); }
+.suggestionActive { background: color-mix(in srgb, var(--primary) 15%, var(--surface)); }
+.suggestionMeta { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
 /* デッキリスト */
 .listHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px; color: var(--text-muted); }
 .emptyMsg { text-align: center; color: var(--text-muted); padding: 24px 0; }
