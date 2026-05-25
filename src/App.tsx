@@ -8,6 +8,7 @@ import DeckEditor from './components/DeckEditor';
 import Statistics from './components/Statistics';
 import TestDraw from './components/TestDraw';
 import { DeckStoreProvider } from './store/DeckStoreContext';
+import { seedDB } from './logic/cardCache';
 
 function initDark(): boolean {
   const saved = localStorage.getItem('theme');
@@ -19,6 +20,8 @@ function initDark(): boolean {
 export default function App() {
   const [screen, setScreen] = useState<Screen>('deck-editor');
   const [dark, setDark] = useState(initDark);
+
+  useEffect(() => { seedDB(); }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
