@@ -61,7 +61,7 @@ export default function ComboCalculator({
     [entries]
   );
   const levelValues = useMemo(
-    () => [...new Set(entries.map((e) => e.card.level))].sort((a, b) => a - b),
+    () => [...new Set([1, ...entries.map((e) => e.card.level)])].sort((a, b) => a - b),
     [entries]
   );
 
