@@ -4,9 +4,7 @@ import { useDeckReady } from '../../hooks/useDeckReady';
 import ComboProbabilityList from '../common/ComboProbabilityList';
 import DeckNotReady from '../common/DeckNotReady';
 import CostDistributionChart from './CostDistributionChart';
-import ExpectedValueCard from './ExpectedValueCard';
 import KeyCardProbabilityCard from './KeyCardProbabilityCard';
-import MulliganNote from './MulliganNote';
 import PlayabilityCard from './PlayabilityCard';
 import styles from './Dashboard.module.css';
 
@@ -31,8 +29,9 @@ export default function Dashboard() {
 
   return (
     <div className={styles.grid}>
-      <ExpectedValueCard result={result} />
-      <MulliganNote result={result} />
+      <div className={styles.wide}>
+        <ComboProbabilityList combos={activeDeck.combos} entries={activeDeck.entries} />
+      </div>
       <div className={styles.wide}>
         <PlayabilityCard entries={activeDeck.entries} />
       </div>
@@ -41,9 +40,6 @@ export default function Dashboard() {
           <KeyCardProbabilityCard probability={keyProb} entries={activeDeck.entries} />
         </div>
       )}
-      <div className={styles.wide}>
-        <ComboProbabilityList combos={activeDeck.combos} entries={activeDeck.entries} />
-      </div>
       <div className={styles.wide}>
         <CostDistributionChart distribution={result.costDistribution} />
       </div>
