@@ -3,6 +3,7 @@ import { exportDeckText } from '../../logic/deckExport';
 import { useDeckStoreCtx } from '../../store/DeckStoreContext';
 import CardForm from './CardForm';
 import ComboManager from './ComboManager';
+import DeckDistributionChart from './DeckDistributionChart';
 import DeckExportModal from './DeckExportModal';
 import DeckImportModal from './DeckImportModal';
 import DeckList from './DeckList';
@@ -94,6 +95,7 @@ export default function DeckEditor() {
               onRemove={removeEntry}
             />
             <DeckSummary entries={activeDeck.entries} />
+            <DeckDistributionChart entries={activeDeck.entries} />
             <ComboManager />
           </>
         ) : (
