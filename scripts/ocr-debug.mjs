@@ -55,7 +55,16 @@ function estimateGridRows(confirmed, imgHeight, tolerance = 80) {
     while (y < imgHeight) { rowYs.push(y); y += avgGap; }
   }
 
-  return rowYs.map((y) => ({ y0: y - tolerance, y1: y + tolerance }));
+  return rowYs.map((center) => ({ y0: center - tolerance, y1: center + tolerance, center }));
+}
+
+function estimateGridCols(matches, tolerance = 150) {
+  const xCenters = matches.map((m) => (m.x0 + m.x1) / 2).sort((a, b) => a - b);
+  const colXs = [];
+  for (const x of xCenters) {
+    if (!colXs.some((c) => Math.abs(c - x) < tolerance)) colXs.push(x);
+  }
+  return colXs.sort((a, b) => a - b);
 }
 
 function tryFuzzyCardNo(text) {
@@ -138,6 +147,39 @@ async function processImage(filePath) {
       fuzzyMatches.push({ ...w, text: candidate });
     }
   }
+
+  const allMatches = [
+    ...strictMatches.map((m) => ({ ...m, fuzzy: false })),
+    ...fuzzyMatches.map((m) => ({ ...m, fuzzy: true })),
+  ];
+
+  // グリッド構築
+  const colXs = estimateGridCols(allMatches);
+  const colTolerance = 150;
+  const rowTolerance = 80;
+  const grid = gridRows.map(() => colXs.map(() => null));
+  for (const m of allMatches) {
+    const cx = (m.x0 + m.x1) / 2;
+    const cy = (m.y0 + m.y1) / 2;
+    const colIdx = colXs.findIndex((x) => Math.abs(x - cx) < colTolerance);
+    const rowIdx = gridRows.findIndex((row) => cy >= row.y0 - rowTolerance && cy <= row.y1 + rowTolerance);
+    if (rowIdx >= 0 && colIdx >= 0 && grid[rowIdx][colIdx] === null) grid[rowIdx][colIdx] = m;
+  }
+
+  // テキスト出力
+  console.log('\n  --- OCRテキスト出力 ---');
+  for (const row of grid) {
+    if (row.every((cell) => cell === null)) continue;
+    for (const cell of row) {
+      if (cell === null) {
+        console.log('  # 未検出');
+      } else {
+        const suffix = cell.fuzzy ? '  # fuzzy（要確認）' : '';
+        console.log(`  ${cell.text} 1${suffix}`);
+      }
+    }
+  }
+  console.log('  --- ここまで ---\n');
 
   console.log(`  厳密マッチ: ${strictMatches.length} 件`);
   strictMatches.forEach((c) =>

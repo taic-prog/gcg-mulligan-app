@@ -9,6 +9,10 @@ interface WordBox {
   y1: number;
 }
 
+interface MatchBox extends WordBox {
+  fuzzy: boolean;
+}
+
 /** TSV形式のOCR結果（level=5がword）からword一覧を取得 */
 function parseTsv(tsv: string): WordBox[] {
   const words: WordBox[] = [];
@@ -32,7 +36,7 @@ function estimateGridRows(
   confirmed: WordBox[],
   imgHeight: number,
   tolerance = 80
-): Array<{ y0: number; y1: number }> {
+): Array<{ y0: number; y1: number; center: number }> {
   if (confirmed.length === 0) return [];
 
   const yCenters = confirmed.map((c) => (c.y0 + c.y1) / 2).sort((a, b) => a - b);
@@ -43,17 +47,26 @@ function estimateGridRows(
     if (!rowYs.some((r) => Math.abs(r - y) < tolerance)) rowYs.push(y);
   }
 
-  // 行間隔の平均から未検出の後続行を補完（前方補完のみ）
+  // 行間隔の平均から未検出の後続行を補完（後方のみ）
   if (rowYs.length >= 2) {
     const gaps = rowYs.slice(1).map((y, i) => y - rowYs[i]);
     const avgGap = gaps.reduce((a, b) => a + b) / gaps.length;
 
-    // 後方補完（画像高さまで）
     let y = rowYs[rowYs.length - 1] + avgGap;
     while (y < imgHeight) { rowYs.push(y); y += avgGap; }
   }
 
-  return rowYs.map((y) => ({ y0: y - tolerance, y1: y + tolerance }));
+  return rowYs.map((center) => ({ y0: center - tolerance, y1: center + tolerance, center }));
+}
+
+/** 検出済みカードのX中心から列X座標を推定する */
+function estimateGridCols(matches: WordBox[], tolerance = 150): number[] {
+  const xCenters = matches.map((m) => (m.x0 + m.x1) / 2).sort((a, b) => a - b);
+  const colXs: number[] = [];
+  for (const x of xCenters) {
+    if (!colXs.some((c) => Math.abs(c - x) < tolerance)) colXs.push(x);
+  }
+  return colXs.sort((a, b) => a - b);
 }
 
 /**
@@ -72,20 +85,13 @@ const DIGIT_FIX: Record<string, string> = {
  * カードNo.として解釈できる文字列を返す。返せない場合はnull。
  */
 function tryFuzzyCardNo(text: string): string | null {
-  // ハイフンを除いた英数字のみ抽出
   const raw = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  // GD01065 = 7文字、または GD01-065 のハイフン除去6文字 も許容
   if (raw.length < 6 || raw.length > 8) return null;
 
-  // 先頭2文字: アルファベット部分の補正
   const a0 = ALPHA_FIX[raw[0]] ?? raw[0];
   const a1 = ALPHA_FIX[raw[1]] ?? raw[1];
-
-  // 次の2文字: 数字部分の補正
   const n0 = DIGIT_FIX[raw[2]] ?? raw[2];
   const n1 = DIGIT_FIX[raw[3]] ?? raw[3];
-
-  // 末尾3文字: 数字部分の補正
   const n2 = DIGIT_FIX[raw[raw.length - 3]] ?? raw[raw.length - 3];
   const n3 = DIGIT_FIX[raw[raw.length - 2]] ?? raw[raw.length - 2];
   const n4 = DIGIT_FIX[raw[raw.length - 1]] ?? raw[raw.length - 1];
@@ -143,8 +149,6 @@ export async function recognizeDeckImage(
   if (!data.tsv) return '';
 
   const words = parseTsv(data.tsv);
-
-  // 画像高さを推定（全wordのy1最大値から）
   const imgHeight = Math.max(...words.map((w) => w.y1), 100);
 
   // Step 1: 厳密マッチ
@@ -162,7 +166,7 @@ export async function recognizeDeckImage(
   const gridRows = estimateGridRows(strictMatches, imgHeight);
 
   // Step 3: グリッド行Y範囲内のwordのみ fuzzy match を適用
-  const allMatches = [...strictMatches];
+  const allMatches: MatchBox[] = strictMatches.map((m) => ({ ...m, fuzzy: false }));
   for (const w of words) {
     const cy = (w.y0 + w.y1) / 2;
     const inGrid = gridRows.some((row) => cy >= row.y0 && cy <= row.y1);
@@ -174,13 +178,45 @@ export async function recognizeDeckImage(
     const candidate = tryFuzzyCardNo(w.text);
     if (candidate && !seen.has(candidate)) {
       seen.add(candidate);
-      allMatches.push({ ...w, text: candidate });
+      allMatches.push({ ...w, text: candidate, fuzzy: true });
     }
   }
 
   if (allMatches.length === 0) return '';
 
-  return allMatches
-    .map((cw) => `${cw.text} ${findCountForCard(cw, words)}`)
-    .join('\n');
+  // Step 4: グリッド列を推定し、グリッドマップを構築
+  const colXs = estimateGridCols(allMatches);
+  const colTolerance = 150;
+  const rowTolerance = 80;
+
+  // grid[rowIdx][colIdx] = MatchBox | null
+  const grid: Array<Array<MatchBox | null>> = gridRows.map(() => colXs.map(() => null));
+
+  for (const m of allMatches) {
+    const cx = (m.x0 + m.x1) / 2;
+    const cy = (m.y0 + m.y1) / 2;
+    const colIdx = colXs.findIndex((x) => Math.abs(x - cx) < colTolerance);
+    const rowIdx = gridRows.findIndex((row) => cy >= row.y0 - rowTolerance && cy <= row.y1 + rowTolerance);
+    if (rowIdx >= 0 && colIdx >= 0 && grid[rowIdx][colIdx] === null) {
+      grid[rowIdx][colIdx] = m;
+    }
+  }
+
+  // Step 5: グリッドを行×列の順で出力。検出済みのある行のみ出力し、
+  //         空セルは「# 未検出」、fuzzyは末尾に「# fuzzy（要確認）」を付与する。
+  const lines: string[] = [];
+  for (const row of grid) {
+    if (row.every((cell) => cell === null)) continue; // 検出ゼロの行はスキップ
+    for (const cell of row) {
+      if (cell === null) {
+        lines.push('# 未検出');
+      } else {
+        const count = findCountForCard(cell, words);
+        const suffix = cell.fuzzy ? '  # fuzzy（要確認）' : '';
+        lines.push(`${cell.text} ${count}${suffix}`);
+      }
+    }
+  }
+
+  return lines.join('\n');
 }
