@@ -1,4 +1,5 @@
 import type { CardColor, CardType } from '../types';
+import { getCached, putCache } from './cardCache';
 
 export interface FetchedCardInfo {
   name: string;
@@ -41,7 +42,7 @@ function buildFieldMap(doc: Document): Record<string, string> {
 const TARGET_BASE = 'https://www.gundam-gcg.com/jp/cards/detail.php';
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
-export async function fetchCardInfo(cardNo: string): Promise<FetchedCardInfo> {
+async function fetchFromNetwork(cardNo: string): Promise<FetchedCardInfo> {
   const targetUrl = `${TARGET_BASE}?detailSearch=${encodeURIComponent(cardNo)}`;
   const res = await fetch(`${CORS_PROXY}${encodeURIComponent(targetUrl)}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -73,4 +74,13 @@ export async function fetchCardInfo(cardNo: string): Promise<FetchedCardInfo> {
     feature,
     link,
   };
+}
+
+export async function fetchCardInfo(cardNo: string): Promise<FetchedCardInfo> {
+  const cached = await getCached(cardNo);
+  if (cached) return cached;
+
+  const info = await fetchFromNetwork(cardNo);
+  await putCache(cardNo, info);
+  return info;
 }
