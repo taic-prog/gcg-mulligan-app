@@ -1,6 +1,9 @@
 export type CardType = 'ユニット' | 'パイロット' | 'コマンド' | 'ベース';
 export type CardColor = '青' | '緑' | '赤' | '紫' | '白';
 
+export const CARD_TYPES: readonly CardType[] = ['ユニット', 'パイロット', 'コマンド', 'ベース'];
+export const CARD_COLORS: readonly CardColor[] = ['青', '緑', '赤', '紫', '白'];
+
 export interface Card {
   id: string;
   cardNo: string;

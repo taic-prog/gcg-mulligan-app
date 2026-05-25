@@ -1,3 +1,4 @@
+import { CARD_COLORS, CARD_TYPES } from '../types';
 import type { CardColor, CardType } from '../types';
 import { getCached, putCache } from './cardCache';
 
@@ -58,8 +59,8 @@ async function fetchFromNetwork(cardNo: string): Promise<FetchedCardInfo> {
 
   const level = parseInt(fields['Lv.'] ?? '', 10);
   const cost = parseInt(fields['COST'] ?? '', 10);
-  const color = COLOR_MAP[fields['色'] ?? ''] ?? '青';
-  const cardType = TYPE_MAP[fields['タイプ'] ?? ''] ?? 'ユニット';
+  const color = COLOR_MAP[fields['色'] ?? ''] ?? CARD_COLORS[0];
+  const cardType = TYPE_MAP[fields['タイプ'] ?? ''] ?? CARD_TYPES[0];
   const terrain = fields['地形'] ?? '';
   const feature = fields['特徴'] ?? '';
   const link = fields['リンク'] ?? '';

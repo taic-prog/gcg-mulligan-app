@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { fetchCardInfo } from '../../logic/cardFetch';
 import { canAddCard, validateCard } from '../../logic/validator';
+import { CARD_COLORS, CARD_TYPES } from '../../types';
 import type { Card, CardColor, CardType, DeckEntry } from '../../types';
 import styles from './DeckEditor.module.css';
-
-const CARD_TYPES: CardType[] = ['ユニット', 'パイロット', 'コマンド', 'ベース'];
-const CARD_COLORS: CardColor[] = ['青', '緑', '赤', '紫', '白'];
 
 interface FormState {
   cardNo: string;
@@ -22,7 +20,7 @@ interface FormState {
 }
 
 const INIT: FormState = {
-  cardNo: '', name: '', cardType: 'ユニット', color: '青',
+  cardNo: '', name: '', cardType: CARD_TYPES[0], color: CARD_COLORS[0],
   level: '1', cost: '1', count: '1', isKeyCard: false,
   terrain: '', feature: '', link: '',
 };
