@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 import { fetchCardInfo } from '../../logic/cardFetch';
+import { recognizeDeckImage } from '../../logic/imageOcr';
 import { parseDeckText } from '../../logic/deckImport';
+import type { OcrProgress } from '../../logic/imageOcr';
 import type { DeckEntry } from '../../types';
 import styles from './DeckImportModal.module.css';
 
@@ -13,6 +15,7 @@ interface FetchResult {
 }
 
 type Step = 'input' | 'fetching' | 'done';
+type Tab = 'text' | 'image';
 
 interface Props {
   onImport: (entries: DeckEntry[]) => void;
@@ -34,15 +37,61 @@ const STATUS_CLASS: Record<FetchResult['status'], string> = {
 };
 
 export default function DeckImportModal({ onImport, onClose }: Props) {
+  const [tab, setTab] = useState<Tab>('text');
   const [text, setText] = useState('');
   const [step, setStep] = useState<Step>('input');
   const [results, setResults] = useState<FetchResult[]>([]);
   const [parseError, setParseError] = useState('');
   const abortRef = useRef(false);
 
+  // 画像タブ用state
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [ocrStatus, setOcrStatus] = useState<'idle' | 'processing' | 'done' | 'error'>('idle');
+  const [ocrProgress, setOcrProgress] = useState<OcrProgress>({ status: '', progress: 0 });
+  const [ocrError, setOcrError] = useState('');
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const doneCount = results.filter((r) => r.status === 'ok').length;
   const errorCount = results.filter((r) => r.status === 'error').length;
   const loadedCount = doneCount + errorCount;
+
+  function handleImageSelect(file: File) {
+    if (!file.type.startsWith('image/')) return;
+    setImageFile(file);
+    setImageUrl(URL.createObjectURL(file));
+    setOcrStatus('idle');
+    setOcrError('');
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleImageSelect(file);
+  }
+
+  async function handleOcr() {
+    if (!imageFile) return;
+    setOcrStatus('processing');
+    setOcrError('');
+    try {
+      const result = await recognizeDeckImage(imageFile, (p) => setOcrProgress(p));
+      if (!result.trim()) {
+        setOcrStatus('error');
+        setOcrError('カードNo.を認識できませんでした。画像を確認してください。');
+        return;
+      }
+      setText(result);
+      setOcrStatus('done');
+      // テキストタブに切り替えてユーザーが確認できるようにする
+      setTab('text');
+    } catch {
+      setOcrStatus('error');
+      setOcrError('画像の読み取りに失敗しました。');
+    }
+  }
 
   async function handleFetch() {
     const parsed = parseDeckText(text);
@@ -115,8 +164,27 @@ export default function DeckImportModal({ onImport, onClose }: Props) {
           <button className={styles.btnClose} onClick={handleClose}>✕</button>
         </div>
 
+        {/* タブ（入力ステップのみ表示） */}
+        {step === 'input' && (
+          <div className={styles.tabs}>
+            <button
+              className={tab === 'text' ? styles.tabActive : styles.tab}
+              onClick={() => setTab('text')}
+            >
+              テキスト
+            </button>
+            <button
+              className={tab === 'image' ? styles.tabActive : styles.tab}
+              onClick={() => setTab('image')}
+            >
+              画像から読み取り
+            </button>
+          </div>
+        )}
+
         <div className={styles.body}>
-          {step === 'input' && (
+          {/* テキストタブ */}
+          {step === 'input' && tab === 'text' && (
             <>
               <p className={styles.label}>デッキリストを貼り付け（1行1カード）</p>
               <textarea
@@ -132,6 +200,64 @@ export default function DeckImportModal({ onImport, onClose }: Props) {
             </>
           )}
 
+          {/* 画像タブ */}
+          {step === 'input' && tab === 'image' && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0])}
+              />
+              {!imageFile ? (
+                <div
+                  className={isDragOver ? styles.dropZoneActive : styles.dropZone}
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={handleDrop}
+                >
+                  <p className={styles.dropZoneText}>画像をドロップ、またはクリックして選択</p>
+                  <p className={styles.dropZoneHint}>GCG公式のデッキシェア画像に対応</p>
+                </div>
+              ) : (
+                <>
+                  {imageUrl && (
+                    <img src={imageUrl} alt="デッキ画像" className={styles.imagePreview} />
+                  )}
+                  {ocrStatus === 'processing' && (
+                    <>
+                      <div className={styles.progressBar}>
+                        <div
+                          className={styles.progressFill}
+                          style={{ width: `${ocrProgress.progress * 100}%` }}
+                        />
+                      </div>
+                      <p className={styles.progressLabel}>
+                        {ocrProgress.status} … {Math.round(ocrProgress.progress * 100)}%
+                      </p>
+                    </>
+                  )}
+                  {ocrStatus === 'done' && (
+                    <p className={styles.progress}>読み取り完了 — テキストタブで確認してください</p>
+                  )}
+                  {ocrError && <p className={styles.ocrError}>{ocrError}</p>}
+                  <p className={styles.hint}>
+                    <button
+                      className={styles.btnCancel}
+                      style={{ fontSize: 11, padding: '2px 10px', marginTop: 6 }}
+                      onClick={() => { setImageFile(null); setImageUrl(null); setOcrStatus('idle'); }}
+                    >
+                      別の画像を選択
+                    </button>
+                  </p>
+                </>
+              )}
+            </>
+          )}
+
+          {/* 取得結果一覧 */}
           {(step === 'fetching' || step === 'done') && (
             <>
               <div className={styles.resultList}>
@@ -160,20 +286,26 @@ export default function DeckImportModal({ onImport, onClose }: Props) {
 
         <div className={styles.footer}>
           {step === 'done' && (
-            <span className={styles.footerNote}>
-              ※ 現在のデッキリストは上書きされます
-            </span>
+            <span className={styles.footerNote}>※ 現在のデッキリストは上書きされます</span>
           )}
-          <button className={styles.btnCancel} onClick={handleClose}>
-            キャンセル
-          </button>
-          {step === 'input' && (
+          <button className={styles.btnCancel} onClick={handleClose}>キャンセル</button>
+          {step === 'input' && tab === 'text' && (
             <button
               className={styles.btnFetch}
               onClick={handleFetch}
               disabled={!text.trim()}
             >
               カード情報を取得
+            </button>
+          )}
+          {step === 'input' && tab === 'image' && imageFile && ocrStatus !== 'processing' && ocrStatus !== 'done' && (
+            <button className={styles.btnFetch} onClick={handleOcr}>
+              画像を読み取る
+            </button>
+          )}
+          {step === 'input' && tab === 'image' && ocrStatus === 'done' && (
+            <button className={styles.btnFetch} onClick={() => setTab('text')}>
+              テキストを確認する
             </button>
           )}
           {step === 'done' && (
