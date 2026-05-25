@@ -18,3 +18,7 @@ Thumbs.db
 
 # Windows Zone Identifier
 *.Identifier
+
+# OCRデバッグ用
+sampleImg/
+eng.traineddata
