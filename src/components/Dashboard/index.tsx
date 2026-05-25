@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { calculateExpectedCost, calculateKeyCardProbability } from '../../logic/calculator';
-import { useDeckStoreCtx } from '../../store/DeckStoreContext';
+import { useDeckReady } from '../../hooks/useDeckReady';
 import ComboProbabilityList from '../common/ComboProbabilityList';
+import DeckNotReady from '../common/DeckNotReady';
 import CostDistributionChart from './CostDistributionChart';
 import ExpectedValueCard from './ExpectedValueCard';
 import KeyCardProbabilityCard from './KeyCardProbabilityCard';
@@ -10,10 +11,7 @@ import PlayabilityCard from './PlayabilityCard';
 import styles from './Dashboard.module.css';
 
 export default function Dashboard() {
-  const { activeDeck } = useDeckStoreCtx();
-
-  const total = activeDeck?.entries.reduce((s, e) => s + e.count, 0) ?? 0;
-  const ready = activeDeck !== null && total === 50;
+  const { activeDeck, total, ready } = useDeckReady();
 
   const result = useMemo(() => {
     if (!ready || !activeDeck) return null;
@@ -25,22 +23,8 @@ export default function Dashboard() {
     return calculateKeyCardProbability(activeDeck.entries);
   }, [activeDeck]);
 
-  if (!activeDeck) {
-    return (
-      <div className={styles.noData}>
-        <p>デッキが選択されていません</p>
-        <p className={styles.noDataHint}>デッキ編集画面でデッキを作成・選択してください</p>
-      </div>
-    );
-  }
-
-  if (!ready) {
-    return (
-      <div className={styles.noData}>
-        <p>デッキが 50 枚ではありません（現在 {total} 枚）</p>
-        <p className={styles.noDataHint}>デッキ編集画面でちょうど 50 枚に調整してください</p>
-      </div>
-    );
+  if (!activeDeck || !ready) {
+    return <DeckNotReady total={total} hint="デッキ編集画面でデッキを作成・選択してください" />;
   }
 
   if (!result) return <div className={styles.noData}>計算に失敗しました</div>;

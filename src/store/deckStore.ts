@@ -113,6 +113,14 @@ export function useDeckStore(): DeckStore {
 
   const activeDeck = decks.find((d) => d.id === activeDeckId) ?? null;
 
+  function applyToActive(updater: (deck: Deck) => Partial<Pick<Deck, 'entries' | 'combos'>>) {
+    if (!activeDeckId) return;
+    const deck = decks.find((d) => d.id === activeDeckId);
+    if (!deck) return;
+    const updated = updateDeck(activeDeckId, updater(deck));
+    if (updated) setDecks((prev) => prev.map((d) => (d.id === activeDeckId ? updated : d)));
+  }
+
   const handleSetActiveDeck = useCallback((id: string) => {
     setActiveDeckId(id);
   }, []);
@@ -139,38 +147,29 @@ export function useDeckStore(): DeckStore {
 
   const handleAddEntry = useCallback(
     (entry: DeckEntry) => {
-      if (!activeDeckId) return;
-      const deck = decks.find((d) => d.id === activeDeckId);
-      if (!deck) return;
-      const updated = updateDeck(activeDeckId, { entries: [...deck.entries, entry] });
-      if (updated) setDecks((prev) => prev.map((d) => (d.id === activeDeckId ? updated : d)));
+      applyToActive((deck) => ({ entries: [...deck.entries, entry] }));
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeDeckId, decks]
   );
 
   const handleUpdateEntry = useCallback(
     (cardId: string, count: number) => {
-      if (!activeDeckId) return;
-      const deck = decks.find((d) => d.id === activeDeckId);
-      if (!deck) return;
-      const updated = updateDeck(activeDeckId, {
+      applyToActive((deck) => ({
         entries: deck.entries.map((e) => (e.card.id === cardId ? { ...e, count } : e)),
-      });
-      if (updated) setDecks((prev) => prev.map((d) => (d.id === activeDeckId ? updated : d)));
+      }));
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeDeckId, decks]
   );
 
   const handleRemoveEntry = useCallback(
     (cardId: string) => {
-      if (!activeDeckId) return;
-      const deck = decks.find((d) => d.id === activeDeckId);
-      if (!deck) return;
-      const updated = updateDeck(activeDeckId, {
+      applyToActive((deck) => ({
         entries: deck.entries.filter((e) => e.card.id !== cardId),
-      });
-      if (updated) setDecks((prev) => prev.map((d) => (d.id === activeDeckId ? updated : d)));
+      }));
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeDeckId, decks]
   );
 
@@ -194,39 +193,30 @@ export function useDeckStore(): DeckStore {
 
   const handleAddCombo = useCallback(
     (combo: Omit<SavedCombo, 'id'>) => {
-      if (!activeDeckId) return;
-      const deck = decks.find((d) => d.id === activeDeckId);
-      if (!deck) return;
       const newCombo: SavedCombo = { ...combo, id: crypto.randomUUID() };
-      const updated = updateDeck(activeDeckId, { combos: [...deck.combos, newCombo] });
-      if (updated) setDecks((prev) => prev.map((d) => (d.id === activeDeckId ? updated : d)));
+      applyToActive((deck) => ({ combos: [...deck.combos, newCombo] }));
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeDeckId, decks]
   );
 
   const handleUpdateCombo = useCallback(
     (comboId: string, data: Partial<Pick<SavedCombo, 'name' | 'condition'>>) => {
-      if (!activeDeckId) return;
-      const deck = decks.find((d) => d.id === activeDeckId);
-      if (!deck) return;
-      const updated = updateDeck(activeDeckId, {
+      applyToActive((deck) => ({
         combos: deck.combos.map((c) => (c.id === comboId ? { ...c, ...data } : c)),
-      });
-      if (updated) setDecks((prev) => prev.map((d) => (d.id === activeDeckId ? updated : d)));
+      }));
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeDeckId, decks]
   );
 
   const handleDeleteCombo = useCallback(
     (comboId: string) => {
-      if (!activeDeckId) return;
-      const deck = decks.find((d) => d.id === activeDeckId);
-      if (!deck) return;
-      const updated = updateDeck(activeDeckId, {
+      applyToActive((deck) => ({
         combos: deck.combos.filter((c) => c.id !== comboId),
-      });
-      if (updated) setDecks((prev) => prev.map((d) => (d.id === activeDeckId ? updated : d)));
+      }));
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeDeckId, decks]
   );
 

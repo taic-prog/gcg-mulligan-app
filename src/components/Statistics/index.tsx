@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { runMultipleSimulations } from '../../logic/simulator';
-import { useDeckStoreCtx } from '../../store/DeckStoreContext';
+import { useDeckReady } from '../../hooks/useDeckReady';
 import type { MultiSimulationStats } from '../../types';
+import DeckNotReady from '../common/DeckNotReady';
 import SimHistogram from './SimHistogram';
 import StatsCard from './StatsCard';
 import styles from './Statistics.module.css';
@@ -9,12 +10,9 @@ import styles from './Statistics.module.css';
 const COUNTS = [100, 1000, 10000] as const;
 
 export default function Statistics() {
-  const { activeDeck } = useDeckStoreCtx();
+  const { activeDeck, total, ready } = useDeckReady();
   const [stats, setStats] = useState<MultiSimulationStats | null>(null);
   const [running, setRunning] = useState(false);
-
-  const total = activeDeck?.entries.reduce((s, e) => s + e.count, 0) ?? 0;
-  const ready = activeDeck !== null && total === 50;
 
   function handleRun(count: number) {
     if (!activeDeck) return;
@@ -26,22 +24,8 @@ export default function Statistics() {
     }, 0);
   }
 
-  if (!activeDeck) {
-    return (
-      <div className={styles.noData}>
-        <p>デッキが選択されていません</p>
-        <p className={styles.noDataHint}>デッキ編集画面でデッキを選択してください</p>
-      </div>
-    );
-  }
-
-  if (!ready) {
-    return (
-      <div className={styles.noData}>
-        <p>デッキが 50 枚ではありません（現在 {total} 枚）</p>
-        <p className={styles.noDataHint}>デッキ編集画面でちょうど 50 枚に調整してください</p>
-      </div>
-    );
+  if (!activeDeck || !ready) {
+    return <DeckNotReady total={total} />;
   }
 
   return (

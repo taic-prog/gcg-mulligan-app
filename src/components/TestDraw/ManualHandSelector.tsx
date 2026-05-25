@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { Card, DeckEntry } from '../../types';
+import CardDetailPanel from '../common/CardDetailPanel';
+import CardTypeBadge from '../common/CardTypeBadge';
 import styles from './ManualHandSelector.module.css';
 
 interface Props {
@@ -79,7 +81,7 @@ export default function ManualHandSelector({ entries, onConfirm }: Props) {
               <div className={styles.rowMain}>
                 <div className={styles.info}>
                   <div className={styles.cardHeader}>
-                    <span className={styles.badge} data-color={card.color}>{card.cardType}</span>
+                    <CardTypeBadge card={card} />
                     <span className={styles.cardName}>
                       {card.isKeyCard && <span className={styles.keyIcon}>★</span>}
                       {card.name}
@@ -114,25 +116,7 @@ export default function ManualHandSelector({ entries, onConfirm }: Props) {
                   >＋</button>
                 </div>
               </div>
-              {expanded && hasDetail && (
-                <div className={styles.cardDetail}>
-                  {card.terrain && (
-                    <span className={styles.detailItem}>
-                      <span className={styles.detailLabel}>地形</span>{card.terrain}
-                    </span>
-                  )}
-                  {card.feature && (
-                    <span className={styles.detailItem}>
-                      <span className={styles.detailLabel}>特徴</span>{card.feature}
-                    </span>
-                  )}
-                  {card.link && (
-                    <span className={styles.detailItem}>
-                      <span className={styles.detailLabel}>リンク</span>{card.link}
-                    </span>
-                  )}
-                </div>
-              )}
+              {expanded && hasDetail && <CardDetailPanel card={card} />}
             </div>
           );
         })}

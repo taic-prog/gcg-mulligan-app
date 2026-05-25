@@ -1,0 +1,17 @@
+.badge {
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badge[data-color="青"] { background: #dbeafe; color: #1e40af; }
+.badge[data-color="緑"] { background: #dcfce7; color: #166534; }
+.badge[data-color="赤"] { background: #fee2e2; color: #991b1b; }
+.badge[data-color="紫"] { background: #f3e8ff; color: #6b21a8; }
+.badge[data-color="白"] { background: #f1f5f9; color: #475569; border: 1px solid #94a3b8; }
+:global([data-theme="dark"]) .badge[data-color="青"] { background: #1e3a8a; color: #93c5fd; }
+:global([data-theme="dark"]) .badge[data-color="緑"] { background: #14532d; color: #86efac; }
+:global([data-theme="dark"]) .badge[data-color="赤"] { background: #7f1d1d; color: #fca5a5; }
+:global([data-theme="dark"]) .badge[data-color="紫"] { background: #3b0764; color: #d8b4fe; }
+:global([data-theme="dark"]) .badge[data-color="白"] { background: #1e293b; color: #cbd5e1; border: 1px solid #475569; }

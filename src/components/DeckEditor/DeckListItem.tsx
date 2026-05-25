@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { DeckEntry } from '../../types';
+import CardDetailPanel from '../common/CardDetailPanel';
+import CardTypeBadge from '../common/CardTypeBadge';
 import styles from './DeckEditor.module.css';
 
 interface Props {
@@ -17,7 +19,7 @@ export default function DeckListItem({ entry, onUpdateCount, onToggleKeyCard, on
   return (
     <div className={styles.item}>
       <div className={styles.itemMain}>
-        <span className={styles.badge} data-color={card.color}>{card.cardType}</span>
+        <CardTypeBadge card={card} />
         {card.isKeyCard && <span className={styles.keyIcon}>🔑</span>}
         <div className={styles.nameGroup}>
           <span className={styles.cardName} title={card.name}>{card.name}</span>
@@ -46,25 +48,7 @@ export default function DeckListItem({ entry, onUpdateCount, onToggleKeyCard, on
         >🔑</button>
         <button className={styles.btnRemove} onClick={() => onRemove(card.id)} title="削除">✕</button>
       </div>
-      {expanded && hasDetail && (
-        <div className={styles.cardDetail}>
-          {card.terrain && (
-            <span className={styles.detailItem}>
-              <span className={styles.detailLabel}>地形</span>{card.terrain}
-            </span>
-          )}
-          {card.feature && (
-            <span className={styles.detailItem}>
-              <span className={styles.detailLabel}>特徴</span>{card.feature}
-            </span>
-          )}
-          {card.link && (
-            <span className={styles.detailItem}>
-              <span className={styles.detailLabel}>リンク</span>{card.link}
-            </span>
-          )}
-        </div>
-      )}
+      {expanded && hasDetail && <CardDetailPanel card={card} />}
     </div>
   );
 }

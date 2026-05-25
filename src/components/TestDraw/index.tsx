@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { drawHand, runMultipleSimulations } from '../../logic/simulator';
-import { useDeckStoreCtx } from '../../store/DeckStoreContext';
+import { useDeckReady } from '../../hooks/useDeckReady';
 import type { Card, MultiSimulationStats } from '../../types';
 import ComboProbabilityList from '../common/ComboProbabilityList';
+import DeckNotReady from '../common/DeckNotReady';
 import HandDisplay from './HandDisplay';
 import HandSummary from './HandSummary';
 import ManualHandSelector from './ManualHandSelector';
@@ -13,16 +14,13 @@ import styles from './TestDraw.module.css';
 type DrawMode = 'random' | 'manual';
 
 export default function TestDraw() {
-  const { activeDeck } = useDeckStoreCtx();
+  const { activeDeck, total, ready } = useDeckReady();
   const [drawMode, setDrawMode] = useState<DrawMode>('random');
   const [initialHand, setInitialHand] = useState<Card[] | null>(null);
   const [mulliganHand, setMulliganHand] = useState<Card[] | null>(null);
   const [mulliganUsed, setMulliganUsed] = useState(false);
   const [simStats, setSimStats] = useState<MultiSimulationStats | null>(null);
   const [simRunning, setSimRunning] = useState(false);
-
-  const total = activeDeck?.entries.reduce((s, e) => s + e.count, 0) ?? 0;
-  const ready = activeDeck !== null && total === 50;
 
   function clearHand() {
     setInitialHand(null);
@@ -67,22 +65,8 @@ export default function TestDraw() {
     }, 0);
   }
 
-  if (!activeDeck) {
-    return (
-      <div className={styles.noData}>
-        <p>デッキが選択されていません</p>
-        <p className={styles.noDataHint}>デッキ編集画面でデッキを選択してください</p>
-      </div>
-    );
-  }
-
-  if (!ready) {
-    return (
-      <div className={styles.noData}>
-        <p>デッキが 50 枚ではありません（現在 {total} 枚）</p>
-        <p className={styles.noDataHint}>デッキ編集画面でちょうど 50 枚に調整してください</p>
-      </div>
-    );
+  if (!activeDeck || !ready) {
+    return <DeckNotReady total={total} />;
   }
 
   return (
