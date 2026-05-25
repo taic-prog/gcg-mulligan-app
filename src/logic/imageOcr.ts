@@ -91,6 +91,8 @@ function tryFuzzyCardNo(text: string): string | null {
   const n4 = DIGIT_FIX[raw[raw.length - 1]] ?? raw[raw.length - 1];
 
   const candidate = `${a0}${a1}${n0}${n1}-${n2}${n3}${n4}`;
+  const prefix = `${a0}${a1}`;
+  if (prefix !== 'GD' && prefix !== 'ST') return null;
   return CARD_NO_RE.test(candidate) ? candidate : null;
 }
 
