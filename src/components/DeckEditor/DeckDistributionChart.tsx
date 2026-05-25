@@ -3,15 +3,15 @@ import styles from './DeckDistributionChart.module.css';
 
 interface Props { entries: DeckEntry[] }
 
+const RANGE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
 function buildDist(entries: DeckEntry[], key: 'level' | 'cost'): [number, number][] {
   const map: Record<number, number> = {};
   for (const { card, count } of entries) {
     const v = card[key];
     map[v] = (map[v] ?? 0) + count;
   }
-  return Object.entries(map)
-    .map(([k, v]) => [Number(k), v] as [number, number])
-    .sort(([a], [b]) => a - b);
+  return RANGE.map((k) => [k, map[k] ?? 0]);
 }
 
 function MiniBarChart({ label, data }: { label: string; data: [number, number][] }) {
