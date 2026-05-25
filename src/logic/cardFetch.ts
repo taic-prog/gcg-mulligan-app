@@ -38,8 +38,12 @@ function buildFieldMap(doc: Document): Record<string, string> {
   return map;
 }
 
+const TARGET_BASE = 'https://www.gundam-gcg.com/jp/cards/detail.php';
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+
 export async function fetchCardInfo(cardNo: string): Promise<FetchedCardInfo> {
-  const res = await fetch(`/gcg-api/jp/cards/detail.php?detailSearch=${encodeURIComponent(cardNo)}`);
+  const targetUrl = `${TARGET_BASE}?detailSearch=${encodeURIComponent(cardNo)}`;
+  const res = await fetch(`${CORS_PROXY}${encodeURIComponent(targetUrl)}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
   const html = await res.text();
