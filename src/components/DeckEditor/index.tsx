@@ -64,6 +64,7 @@ export default function DeckEditor() {
               value={activeDeck.name}
               onChange={(e) => renameDeck(activeDeck.id, e.target.value)}
               placeholder="デッキ名"
+              maxLength={50}
             />
           )}
           <button className={styles.btnNew} onClick={handleNewDeck} disabled={decks.length >= 5}>

@@ -2,8 +2,8 @@ import { useRef, useState } from 'react';
 import { getAllCards } from '../../logic/cardCache';
 import { fetchCardInfo } from '../../logic/cardFetch';
 import type { FetchedCardInfo } from '../../logic/cardFetch';
-import { canAddCard, validateCard } from '../../logic/validator';
-import { CARD_COLORS, CARD_TYPES } from '../../types';
+import { buildCard, canAddCard, validateCard } from '../../logic/validator';
+import { CARD_COLORS, CARD_NO_RE, CARD_TYPES, DECK_SIZE, MAX_COST, MAX_LEVEL, MAX_SAME_CARD } from '../../types';
 import type { Card, CardColor, CardType, DeckEntry } from '../../types';
 import styles from './DeckEditor.module.css';
 
@@ -146,34 +146,31 @@ export default function CardForm({ entries, onAdd }: Props) {
     const cardErrors = validateCard(cardPartial);
     const errMsgs: string[] = cardErrors.map((e) => e.message);
 
-    if (isNaN(count) || count < 1 || count > 4) {
-      errMsgs.push('枚数は1〜4で入力してください');
+    const cardNoVal = form.cardNo.trim();
+    if (cardNoVal && !CARD_NO_RE.test(cardNoVal)) {
+      errMsgs.push('カードNo.の形式が正しくありません（例: GD01-001）');
+    }
+
+    if (isNaN(count) || count < 1 || count > MAX_SAME_CARD) {
+      errMsgs.push(`枚数は1〜${MAX_SAME_CARD}で入力してください`);
     }
 
     if (errMsgs.length > 0) { setErrors(errMsgs); return; }
 
     if (!canAddCard(entries, cardPartial.cardNo!, count)) {
       const total = entries.reduce((s, e) => s + e.count, 0);
-      if (total + count > 50) errMsgs.push('デッキが50枚を超えます');
-      else errMsgs.push(`カードNo.「${cardPartial.cardNo}」はこれ以上追加できません（4枚上限）`);
+      if (total + count > DECK_SIZE) errMsgs.push(`デッキが${DECK_SIZE}枚を超えます`);
+      else errMsgs.push(`カードNo.「${cardPartial.cardNo}」はこれ以上追加できません（${MAX_SAME_CARD}枚上限）`);
       setErrors(errMsgs);
       return;
     }
 
     setErrors([]);
-    const card: Card = {
-      id: crypto.randomUUID(),
-      cardNo: cardPartial.cardNo!,
-      name: form.name,
-      cardType: form.cardType,
-      color: form.color,
-      level,
-      cost,
-      isKeyCard: form.isKeyCard,
-      ...(form.terrain ? { terrain: form.terrain } : {}),
-      ...(form.feature ? { feature: form.feature } : {}),
-      ...(form.link ? { link: form.link } : {}),
-    };
+    const card = buildCard(
+      { cardNo: cardPartial.cardNo!, name: form.name, cardType: form.cardType,
+        color: form.color, level, cost, isKeyCard: form.isKeyCard },
+      { terrain: form.terrain, feature: form.feature, link: form.link }
+    );
     onAdd({ card, count });
     setForm(INIT);
   }
@@ -188,6 +185,7 @@ export default function CardForm({ entries, onAdd }: Props) {
               value={form.cardNo}
               onChange={(e) => { set('cardNo', e.target.value); setFetchError(null); }}
               placeholder="例: GD01-001"
+              maxLength={10}
             />
             <button
               type="button"
@@ -202,7 +200,7 @@ export default function CardForm({ entries, onAdd }: Props) {
         </div>
         <div>
           <label>枚数</label>
-          <input type="number" min={1} max={4} value={form.count} onChange={(e) => set('count', e.target.value)} />
+          <input type="number" min={1} max={MAX_SAME_CARD} value={form.count} onChange={(e) => set('count', e.target.value)} />
         </div>
         <div className={styles.formFull}>
           <label>カード名 *</label>
@@ -215,6 +213,7 @@ export default function CardForm({ entries, onAdd }: Props) {
               placeholder="ガンダム"
               required
               autoComplete="off"
+              maxLength={100}
             />
             {suggestions.length > 0 && (
               <ul className={styles.suggestions}>
@@ -248,11 +247,11 @@ export default function CardForm({ entries, onAdd }: Props) {
         </div>
         <div>
           <label>Lv.</label>
-          <input type="number" min={0} value={form.level} onChange={(e) => set('level', e.target.value)} />
+          <input type="number" min={0} max={MAX_LEVEL} value={form.level} onChange={(e) => set('level', e.target.value)} />
         </div>
         <div>
           <label>コスト</label>
-          <input type="number" min={0} value={form.cost} onChange={(e) => set('cost', e.target.value)} />
+          <input type="number" min={0} max={MAX_COST} value={form.cost} onChange={(e) => set('cost', e.target.value)} />
         </div>
         <div className={styles.checkRow}>
           <input type="checkbox" id="isKeyCard" checked={form.isKeyCard} onChange={(e) => set('isKeyCard', e.target.checked)} />
@@ -260,15 +259,15 @@ export default function CardForm({ entries, onAdd }: Props) {
         </div>
         <div className={styles.formFull}>
           <label>地形</label>
-          <input value={form.terrain} onChange={(e) => set('terrain', e.target.value)} placeholder="例: 宇宙 地球" />
+          <input value={form.terrain} onChange={(e) => set('terrain', e.target.value)} placeholder="例: 宇宙 地球" maxLength={50} />
         </div>
         <div className={styles.formFull}>
           <label>特徴</label>
-          <input value={form.feature} onChange={(e) => set('feature', e.target.value)} placeholder="例: 〔地球連邦〕 〔WB隊〕" />
+          <input value={form.feature} onChange={(e) => set('feature', e.target.value)} placeholder="例: 〔地球連邦〕 〔WB隊〕" maxLength={100} />
         </div>
         <div className={styles.formFull}>
           <label>リンク</label>
-          <input value={form.link} onChange={(e) => set('link', e.target.value)} placeholder="例: 「アムロ・レイ」" />
+          <input value={form.link} onChange={(e) => set('link', e.target.value)} placeholder="例: 「アムロ・レイ」" maxLength={100} />
         </div>
       </div>
       {errors.length > 0 && (

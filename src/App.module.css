@@ -13,6 +13,8 @@
 
 .title { font-size: 16px; font-weight: 700; color: var(--primary); white-space: nowrap; }
 
+.dbLabel { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
 .btnTheme {
   margin-left: auto;
   background: transparent;

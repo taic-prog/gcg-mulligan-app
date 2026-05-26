@@ -20,8 +20,9 @@ function initDark(): boolean {
 export default function App() {
   const [screen, setScreen] = useState<Screen>('deck-editor');
   const [dark, setDark] = useState(initDark);
+  const [dbLabel, setDbLabel] = useState('');
 
-  useEffect(() => { seedDB(); }, []);
+  useEffect(() => { seedDB().then(setDbLabel); }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
@@ -33,6 +34,7 @@ export default function App() {
       <div className={styles.app}>
         <header className={styles.header}>
           <span className={styles.title}>GCG マリガン期待値計算</span>
+          {dbLabel && <span className={styles.dbLabel}>{dbLabel}</span>}
           <TabNav screen={screen} onChangeScreen={setScreen} />
           <button
             className={styles.btnTheme}

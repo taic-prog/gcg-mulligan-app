@@ -1,10 +1,13 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fetchCardInfo } from '../../logic/cardFetch';
 import { recognizeDeckImage } from '../../logic/imageOcr';
 import { parseDeckText } from '../../logic/deckImport';
+import { buildCard } from '../../logic/validator';
 import type { OcrProgress } from '../../logic/imageOcr';
 import type { DeckEntry } from '../../types';
 import styles from './DeckImportModal.module.css';
+
+const MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20 MB
 
 interface FetchResult {
   cardNo: string;
@@ -53,12 +56,20 @@ export default function DeckImportModal({ onImport, onClose }: Props) {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    return () => { if (imageUrl) URL.revokeObjectURL(imageUrl); };
+  }, [imageUrl]);
+
   const doneCount = results.filter((r) => r.status === 'ok').length;
   const errorCount = results.filter((r) => r.status === 'error').length;
   const loadedCount = doneCount + errorCount;
 
   function handleImageSelect(file: File) {
     if (!file.type.startsWith('image/')) return;
+    if (file.size > MAX_IMAGE_SIZE) {
+      setOcrError(`ファイルサイズが大きすぎます（上限${MAX_IMAGE_SIZE / 1024 / 1024}MB）`);
+      return;
+    }
     setImageFile(file);
     setImageUrl(URL.createObjectURL(file));
     setOcrStatus('idle');
@@ -120,19 +131,11 @@ export default function DeckImportModal({ onImport, onClose }: Props) {
       try {
         const info = await fetchCardInfo(working[i].cardNo);
         const entry: DeckEntry = {
-          card: {
-            id: crypto.randomUUID(),
-            cardNo: working[i].cardNo,
-            name: info.name,
-            cardType: info.cardType,
-            color: info.color,
-            level: info.level,
-            cost: info.cost,
-            isKeyCard: false,
-            ...(info.terrain ? { terrain: info.terrain } : {}),
-            ...(info.feature ? { feature: info.feature } : {}),
-            ...(info.link ? { link: info.link } : {}),
-          },
+          card: buildCard(
+            { cardNo: working[i].cardNo, name: info.name, cardType: info.cardType,
+              color: info.color, level: info.level, cost: info.cost, isKeyCard: false },
+            { terrain: info.terrain, feature: info.feature, link: info.link }
+          ),
           count: working[i].count,
         };
         working[i] = { ...working[i], status: 'ok', name: info.name, entry };

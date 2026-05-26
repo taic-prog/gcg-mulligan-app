@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canAddCard, validateCard, validateDeck } from '../../src/logic/validator';
+import { buildCard, canAddCard, validateCard, validateDeck } from '../../src/logic/validator';
 import type { Card, CardColor, DeckEntry } from '../../src/types';
 
 function makeCard(overrides: Partial<Card> = {}): Card {
@@ -180,5 +180,93 @@ describe('canAddCard', () => {
 
   it('空デッキへの追加は可', () => {
     expect(canAddCard([], 'A', 1)).toBe(true);
+  });
+});
+
+// -----------------------------------------------------------------------
+// validateCard — 上限チェック
+// -----------------------------------------------------------------------
+
+describe('validateCard 上限', () => {
+  it('cost > 20 でエラー', () => {
+    const errors = validateCard(makeCard({ cost: 21 }));
+    expect(errors.some((e) => e.field === 'cost')).toBe(true);
+  });
+
+  it('cost = 20 はエラーなし', () => {
+    const errors = validateCard(makeCard({ cost: 20 }));
+    expect(errors.some((e) => e.field === 'cost')).toBe(false);
+  });
+
+  it('level > 20 でエラー', () => {
+    const errors = validateCard(makeCard({ level: 21 }));
+    expect(errors.some((e) => e.field === 'level')).toBe(true);
+  });
+
+  it('level = 20 はエラーなし', () => {
+    const errors = validateCard(makeCard({ level: 20 }));
+    expect(errors.some((e) => e.field === 'level')).toBe(false);
+  });
+});
+
+// -----------------------------------------------------------------------
+// buildCard
+// -----------------------------------------------------------------------
+
+describe('buildCard', () => {
+  it('必須フィールドからCardを生成する', () => {
+    const card = buildCard({
+      cardNo: 'GD01-001', name: 'ガンダム', cardType: 'ユニット',
+      color: '青', level: 1, cost: 2, isKeyCard: false,
+    });
+    expect(card.cardNo).toBe('GD01-001');
+    expect(card.name).toBe('ガンダム');
+    expect(card.isKeyCard).toBe(false);
+  });
+
+  it('id が UUID 形式で生成される', () => {
+    const card = buildCard({
+      cardNo: 'GD01-001', name: 'テスト', cardType: 'ユニット',
+      color: '青', level: 1, cost: 1, isKeyCard: false,
+    });
+    expect(card.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-/i);
+  });
+
+  it('呼ぶたびに異なる id が生成される', () => {
+    const base = { cardNo: 'GD01-001', name: 'テスト', cardType: 'ユニット' as const, color: '青' as const, level: 1, cost: 1, isKeyCard: false };
+    const a = buildCard(base);
+    const b = buildCard(base);
+    expect(a.id).not.toBe(b.id);
+  });
+
+  it('terrain が truthy なら含まれる', () => {
+    const card = buildCard(
+      { cardNo: 'GD01-001', name: 'テスト', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false },
+      { terrain: '宇宙' }
+    );
+    expect(card.terrain).toBe('宇宙');
+  });
+
+  it('terrain が空文字なら含まれない', () => {
+    const card = buildCard(
+      { cardNo: 'GD01-001', name: 'テスト', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false },
+      { terrain: '' }
+    );
+    expect(card.terrain).toBeUndefined();
+  });
+
+  it('feature・link も同様に truthy なら含まれ、falsy なら含まれない', () => {
+    const withOpt = buildCard(
+      { cardNo: 'GD01-001', name: 'テスト', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false },
+      { feature: '〔地球連邦〕', link: '「アムロ・レイ」' }
+    );
+    expect(withOpt.feature).toBe('〔地球連邦〕');
+    expect(withOpt.link).toBe('「アムロ・レイ」');
+
+    const withoutOpt = buildCard(
+      { cardNo: 'GD01-001', name: 'テスト', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false }
+    );
+    expect(withoutOpt.feature).toBeUndefined();
+    expect(withoutOpt.link).toBeUndefined();
   });
 });

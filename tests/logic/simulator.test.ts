@@ -5,7 +5,10 @@ import {
   expandDeck,
   fisherYatesShuffle,
   runMultipleSimulations,
+  simulateBothPlayabilityModes,
+  simulateCustomPlayability,
   simulateMulligan,
+  simulatePlayability,
 } from '../../src/logic/simulator';
 import type { Card, DeckEntry } from '../../src/types';
 
@@ -178,5 +181,164 @@ describe('runMultipleSimulations', () => {
   it('標準偏差が0以上', () => {
     const stats = runMultipleSimulations(makeStandardDeck(), 100);
     expect(stats.standardDeviation).toBeGreaterThanOrEqual(0);
+  });
+
+  it('comboCheck を渡すと comboHitRate が返る', () => {
+    const stats = runMultipleSimulations(makeStandardDeck(), 100, () => true);
+    expect(stats.comboHitRate).toBe(1);
+  });
+
+  it('comboCheck なしは comboHitRate が undefined', () => {
+    const stats = runMultipleSimulations(makeStandardDeck(), 100);
+    expect(stats.comboHitRate).toBeUndefined();
+  });
+});
+
+// -----------------------------------------------------------------------
+// simulatePlayability
+// -----------------------------------------------------------------------
+
+function makePlayabilityDeck(): DeckEntry[] {
+  return [
+    { card: makeCard({ cardNo: 'C1', cost: 1, level: 1 }), count: 12 },
+    { card: makeCard({ cardNo: 'C2', cost: 2, level: 2 }), count: 12 },
+    { card: makeCard({ cardNo: 'C3', cost: 3, level: 3 }), count: 12 },
+    { card: makeCard({ cardNo: 'C4', cost: 4, level: 4 }), count: 14 },
+  ];
+}
+
+describe('simulatePlayability', () => {
+  it('返り値の各確率が 0〜1 の範囲内', () => {
+    const stats = simulatePlayability(makePlayabilityDeck(), false, 500);
+    expect(stats.turn1Rate).toBeGreaterThanOrEqual(0);
+    expect(stats.turn1Rate).toBeLessThanOrEqual(1);
+    expect(stats.turn2Rate).toBeGreaterThanOrEqual(0);
+    expect(stats.turn3Rate).toBeGreaterThanOrEqual(0);
+    expect(stats.allTurnsRate).toBeGreaterThanOrEqual(0);
+    expect(stats.t2t3Rate).toBeGreaterThanOrEqual(0);
+  });
+
+  it('trialCount が指定値と一致', () => {
+    const stats = simulatePlayability(makePlayabilityDeck(), false, 200);
+    expect(stats.trialCount).toBe(200);
+  });
+
+  it('allTurnsRate は turn1Rate・turn2Rate・turn3Rate を超えない', () => {
+    const stats = simulatePlayability(makePlayabilityDeck(), false, 500);
+    expect(stats.allTurnsRate).toBeLessThanOrEqual(stats.turn1Rate + 0.01);
+    expect(stats.allTurnsRate).toBeLessThanOrEqual(stats.turn2Rate + 0.01);
+    expect(stats.allTurnsRate).toBeLessThanOrEqual(stats.turn3Rate + 0.01);
+  });
+
+  it('multiCardMode=true でも同形の結果が返る', () => {
+    const stats = simulatePlayability(makePlayabilityDeck(), true, 200);
+    expect(stats.turn1Rate).toBeGreaterThanOrEqual(0);
+    expect(stats.trialCount).toBe(200);
+  });
+});
+
+// -----------------------------------------------------------------------
+// simulateBothPlayabilityModes
+// -----------------------------------------------------------------------
+
+describe('simulateBothPlayabilityModes', () => {
+  it('single と multi の両方が返る', () => {
+    const result = simulateBothPlayabilityModes(makePlayabilityDeck(), 200);
+    expect(result.single).toBeDefined();
+    expect(result.multi).toBeDefined();
+  });
+
+  it('両モードとも trialCount が一致', () => {
+    const result = simulateBothPlayabilityModes(makePlayabilityDeck(), 300);
+    expect(result.single.trialCount).toBe(300);
+    expect(result.multi.trialCount).toBe(300);
+  });
+
+  it('各確率が 0〜1 の範囲内', () => {
+    const { single, multi } = simulateBothPlayabilityModes(makePlayabilityDeck(), 200);
+    for (const stats of [single, multi]) {
+      expect(stats.turn1Rate).toBeGreaterThanOrEqual(0);
+      expect(stats.turn1Rate).toBeLessThanOrEqual(1);
+      expect(stats.allTurnsRate).toBeLessThanOrEqual(1);
+    }
+  });
+});
+
+// -----------------------------------------------------------------------
+// simulateCustomPlayability
+// -----------------------------------------------------------------------
+
+describe('simulateCustomPlayability', () => {
+  it('turnCardIds が全て空セットなら全確率=1', () => {
+    const stats = simulateCustomPlayability(
+      makePlayabilityDeck(),
+      [new Set(), new Set(), new Set()],
+      200
+    );
+    expect(stats.turn1Rate).toBe(1);
+    expect(stats.turn2Rate).toBe(1);
+    expect(stats.turn3Rate).toBe(1);
+    expect(stats.allTurnsRate).toBe(1);
+  });
+
+  it('trialCount が一致', () => {
+    const stats = simulateCustomPlayability(makePlayabilityDeck(), [new Set(), new Set(), new Set()], 150);
+    expect(stats.trialCount).toBe(150);
+  });
+
+  it('存在しないカードIDのみ指定すると確率=0', () => {
+    const stats = simulateCustomPlayability(
+      makePlayabilityDeck(),
+      [new Set(['nonexistent-id']), new Set(), new Set()],
+      200
+    );
+    expect(stats.turn1Rate).toBe(0);
+    expect(stats.allTurnsRate).toBe(0);
+  });
+
+  it('T2 のみ失敗する場合 turn2Rate=0 かつ t2t3Rate=0', () => {
+    const stats = simulateCustomPlayability(
+      makePlayabilityDeck(),
+      [new Set(), new Set(['nonexistent']), new Set()],
+      200
+    );
+    expect(stats.turn2Rate).toBe(0);
+    expect(stats.t2t3Rate).toBe(0);
+  });
+
+  it('T3 のみ失敗する場合 turn3Rate=0 かつ t2t3Rate=0', () => {
+    const stats = simulateCustomPlayability(
+      makePlayabilityDeck(),
+      [new Set(), new Set(), new Set(['nonexistent'])],
+      200
+    );
+    expect(stats.turn3Rate).toBe(0);
+    expect(stats.t2t3Rate).toBe(0);
+  });
+
+  it('全ターンで同一カードIDを指定し全カードがそのIDなら全確率=1（hit&&t<2のsplice分岐）', () => {
+    const fixedId = 'fixed-id';
+    const entries: DeckEntry[] = [
+      { card: makeCard({ id: fixedId, cardNo: 'GD01-001', level: 1 }), count: 50 },
+    ];
+    const stats = simulateCustomPlayability(
+      entries,
+      [new Set([fixedId]), new Set([fixedId]), new Set([fixedId])],
+      50
+    );
+    expect(stats.turn1Rate).toBe(1);
+    expect(stats.allTurnsRate).toBe(1);
+    expect(stats.t2t3Rate).toBe(1);
+  });
+
+  it('各確率が 0〜1 の範囲内', () => {
+    const card1Id = 'real-card-id';
+    const entries: DeckEntry[] = [
+      { card: makeCard({ id: card1Id, cardNo: 'GD01-001', cost: 1, level: 1 }), count: 4 },
+      { card: makeCard({ id: 'other', cardNo: 'GD01-002', cost: 2, level: 2 }), count: 46 },
+    ];
+    const stats = simulateCustomPlayability(entries, [new Set([card1Id]), new Set(), new Set()], 200);
+    expect(stats.turn1Rate).toBeGreaterThanOrEqual(0);
+    expect(stats.turn1Rate).toBeLessThanOrEqual(1);
   });
 });

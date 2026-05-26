@@ -3,6 +3,18 @@ export type CardColor = '青' | '緑' | '赤' | '紫' | '白';
 
 export const CARD_TYPES: readonly CardType[] = ['ユニット', 'パイロット', 'コマンド', 'ベース'];
 export const CARD_COLORS: readonly CardColor[] = ['青', '緑', '赤', '紫', '白'];
+export const CARD_TYPE_SET = new Set<string>(CARD_TYPES);
+export const CARD_COLOR_SET = new Set<string>(CARD_COLORS);
+
+// ゲームルール定数
+export const DECK_SIZE = 50;
+export const HAND_SIZE = 5;
+export const MAX_SAME_CARD = 4;
+export const MAX_LEVEL = 20;
+export const MAX_COST = 20;
+// アンカーなしのパターン文字列（行内抽出など非アンカー用途向け）
+export const CARD_NO_PATTERN = '[A-Za-z]{1,4}\\d{0,2}-\\d{2,4}';
+export const CARD_NO_RE = /^[A-Za-z]{1,4}\d{0,2}-\d{2,4}$/;
 
 export interface Card {
   id: string;
@@ -79,6 +91,9 @@ export interface MultiSimulationStats {
 }
 
 export type ComboConditionType = 'card' | 'attr' | 'keycard';
+export const COMBO_CONDITION_TYPES = new Set<string>(
+  ['card', 'attr', 'keycard'] satisfies ComboConditionType[]
+);
 
 export interface ComboConditionItem {
   type: ComboConditionType;

@@ -16,7 +16,8 @@ export default defineConfig({
         lines: 90,
       },
       include: ['src/logic/**/*.ts', 'src/store/deckStore.ts'],
-      exclude: [],
+      // cardCache・imageOcr は IndexedDB/Tesseract.js（ブラウザ外部API）に直接依存するため除外
+      exclude: ['src/logic/cardCache.ts', 'src/logic/imageOcr.ts'],
     },
   },
 });

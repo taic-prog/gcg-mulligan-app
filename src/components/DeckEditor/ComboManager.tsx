@@ -104,6 +104,7 @@ export default function ComboManager() {
               value={editingName}
               onChange={(e) => setEditingName(e.target.value)}
               placeholder="コンボ名を入力"
+              maxLength={50}
             />
           </div>
 

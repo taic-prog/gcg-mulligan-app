@@ -1,4 +1,6 @@
-// カードNo.パターン（例: GD01-024, ST02-001）
+import { MAX_SAME_CARD } from '../types';
+
+// カードNo.パターン（例: GD01-024, ST02-001）— fuzzy正規化後の固定形式
 const CARD_NO_RE = /^[A-Z]{2}\d{2}-\d{3}$/;
 
 interface WordBox {
@@ -112,7 +114,7 @@ function findCountForCard(cardNoBox: WordBox, words: WordBox[]): number {
 
   for (const w of words) {
     const n = parseInt(w.text, 10);
-    if (isNaN(n) || n < 1 || n > 4 || w.text.trim().length !== 1) continue;
+    if (isNaN(n) || n < 1 || n > MAX_SAME_CARD || w.text.trim().length !== 1) continue;
     if (w.y1 > cardNoBox.y0) continue;
 
     const cardCx = (cardNoBox.x0 + cardNoBox.x1) / 2;

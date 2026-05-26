@@ -84,6 +84,170 @@ describe('loadDecks', () => {
     localStorage.setItem('gcg-decks', 'INVALID_JSON');
     expect(loadDecks()).toEqual([]);
   });
+
+  it('null JSON のとき空配列を返す', () => {
+    localStorage.setItem('gcg-decks', 'null');
+    expect(loadDecks()).toEqual([]);
+  });
+
+  it('配列でない JSON のとき空配列を返す', () => {
+    localStorage.setItem('gcg-decks', '{"key":"value"}');
+    expect(loadDecks()).toEqual([]);
+  });
+
+  it('必須フィールドが欠けているデッキはフィルタされる', () => {
+    // name が欠けているデッキ
+    localStorage.setItem('gcg-decks', JSON.stringify([{ id: '1', entries: [], combos: [], createdAt: 'x', updatedAt: 'x' }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('entries が配列でないデッキはフィルタされる', () => {
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: 'bad', combos: [], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('entry.count が範囲外のデッキはフィルタされる', () => {
+    const badEntry = { count: 5, card: { id: 'x', cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false } };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [badEntry], combos: [], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('entry.count が整数でないデッキはフィルタされる', () => {
+    const badEntry = { count: 1.5, card: { id: 'x', cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false } };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [badEntry], combos: [], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('card.isKeyCard が真偽値でないデッキはフィルタされる', () => {
+    const badCard = { id: 'x', cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: 'true' };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [{ count: 1, card: badCard }], combos: [], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('card.id が文字列でないデッキはフィルタされる', () => {
+    const badCard = { id: 123, cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [{ count: 1, card: badCard }], combos: [], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('card.terrain が文字列でない場合はフィルタされる', () => {
+    const badCard = { id: 'x', cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false, terrain: 123 };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [{ count: 1, card: badCard }], combos: [], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('combos フィールドがない既存デッキは combos=[] で補完される', () => {
+    const validCard = { id: 'x', cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [{ count: 1, card: validCard }], createdAt: 'x', updatedAt: 'x',
+    }]));
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].combos).toEqual([]);
+  });
+
+  it('combos の id が文字列でないデッキはフィルタされる', () => {
+    const badCombo = { id: 999, name: 'c', condition: { items: [{ type: 'keycard', minCount: 1 }] } };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [], combos: [badCombo], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('combos の condition が配列でないデッキはフィルタされる', () => {
+    const badCombo = { id: 'c1', name: 'c', condition: { items: 'bad' } };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [], combos: [badCombo], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('combo の item.type が不正なデッキはフィルタされる', () => {
+    const badCombo = { id: 'c1', name: 'c', condition: { items: [{ type: 'invalid', minCount: 1 }] } };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [], combos: [badCombo], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('combo の item がオブジェクトでない場合はフィルタされる', () => {
+    const badCombo = { id: 'c1', name: 'c', condition: { items: ['not-object'] } };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [], combos: [badCombo], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('entry がオブジェクトでない場合はフィルタされる', () => {
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: ['not-object'], combos: [], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('card が null のデッキはフィルタされる（isValidCard null チェック）', () => {
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [{ count: 1, card: null }], combos: [], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('terrain・feature・link が文字列のカードは正常に復元される', () => {
+    const validCard = {
+      id: 'x', cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青',
+      level: 1, cost: 1, isKeyCard: false,
+      terrain: '宇宙', feature: '〔地球連邦〕', link: '「アムロ」',
+    };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [{ count: 1, card: validCard }], combos: [], createdAt: 'x', updatedAt: 'x',
+    }]));
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].entries[0].card.terrain).toBe('宇宙');
+    expect(decks[0].entries[0].card.feature).toBe('〔地球連邦〕');
+    expect(decks[0].entries[0].card.link).toBe('「アムロ」');
+  });
+
+  it('entry.count が 0 のデッキはフィルタされる', () => {
+    const validCard = { id: 'x', cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [{ count: 0, card: validCard }], combos: [], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('combos 配列に null が含まれる場合はデッキごとフィルタされる（isValidCombo null チェック）', () => {
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [], combos: [null], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('combo の condition が null のデッキはフィルタされる（isValidCombo condition チェック）', () => {
+    const badCombo = { id: 'c1', name: 'c', condition: null };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [], combos: [badCombo], createdAt: 'x', updatedAt: 'x',
+    }]));
+    expect(loadDecks()).toHaveLength(0);
+  });
+
+  it('デッキ配列に null が含まれる場合は無視される（isValidDeck null チェック）', () => {
+    const validDeck = { id: '1', name: 'A', entries: [], combos: [], createdAt: 'x', updatedAt: 'x' };
+    localStorage.setItem('gcg-decks', JSON.stringify([null, validDeck]));
+    expect(loadDecks()).toHaveLength(1);
+  });
 });
 
 describe('deleteDeck', () => {
@@ -297,5 +461,309 @@ describe('useDeckStore', () => {
     });
     // 既存デッキは変わらない
     expect(result.current.decks[0].name).toBe('A');
+  });
+
+  it('addCombo でコンボがデッキに追加される', () => {
+    const { result } = renderHook(() => useDeckStore());
+    act(() => {
+      const deck = result.current.saveNewDeck({ name: 'A', entries: [] });
+      result.current.setActiveDeck(deck.id);
+    });
+    act(() => {
+      result.current.addCombo({
+        name: 'テストコンボ',
+        condition: { items: [{ type: 'keycard', minCount: 1 }] },
+      });
+    });
+    const combos = result.current.activeDeck?.combos ?? [];
+    expect(combos).toHaveLength(1);
+    expect(combos[0].name).toBe('テストコンボ');
+    expect(combos[0].id).toBeTruthy();
+  });
+
+  it('updateCombo でコンボ名が更新される', () => {
+    const { result } = renderHook(() => useDeckStore());
+    act(() => {
+      const deck = result.current.saveNewDeck({ name: 'A', entries: [] });
+      result.current.setActiveDeck(deck.id);
+    });
+    act(() => {
+      result.current.addCombo({
+        name: '旧コンボ',
+        condition: { items: [{ type: 'keycard', minCount: 1 }] },
+      });
+    });
+    const comboId = result.current.activeDeck!.combos[0].id;
+    act(() => {
+      result.current.updateCombo(comboId, { name: '新コンボ' });
+    });
+    expect(result.current.activeDeck?.combos[0].name).toBe('新コンボ');
+  });
+
+  it('deleteCombo でコンボが削除される', () => {
+    const { result } = renderHook(() => useDeckStore());
+    act(() => {
+      const deck = result.current.saveNewDeck({ name: 'A', entries: [] });
+      result.current.setActiveDeck(deck.id);
+    });
+    act(() => {
+      result.current.addCombo({
+        name: 'コンボ1',
+        condition: { items: [{ type: 'keycard', minCount: 1 }] },
+      });
+    });
+    act(() => {
+      result.current.addCombo({
+        name: 'コンボ2',
+        condition: { items: [{ type: 'keycard', minCount: 2 }] },
+      });
+    });
+    const comboId = result.current.activeDeck!.combos[0].id;
+    act(() => {
+      result.current.deleteCombo(comboId);
+    });
+    expect(result.current.activeDeck?.combos).toHaveLength(1);
+    expect(result.current.activeDeck?.combos[0].name).toBe('コンボ2');
+  });
+
+  it('importEntries でデッキエントリが置き換えられる', () => {
+    const { result } = renderHook(() => useDeckStore());
+    const card1 = makeCard({ id: 'a', cardNo: 'A' });
+    const card2 = makeCard({ id: 'b', cardNo: 'B' });
+    act(() => {
+      const deck = result.current.saveNewDeck({ name: 'A', entries: [{ card: card1, count: 2 }] });
+      result.current.setActiveDeck(deck.id);
+    });
+    act(() => {
+      result.current.importEntries([{ card: card2, count: 3 }]);
+    });
+    expect(result.current.activeDeck?.entries).toHaveLength(1);
+    expect(result.current.activeDeck?.entries[0].card.id).toBe('b');
+  });
+
+  it('activeDeck が null のとき importEntries は何もしない', () => {
+    const { result } = renderHook(() => useDeckStore());
+    act(() => {
+      result.current.saveNewDeck({ name: 'A', entries: [] });
+      // activeDeck を設定しない
+    });
+    act(() => {
+      result.current.importEntries([makeEntry()]);
+    });
+    expect(result.current.decks[0].entries).toHaveLength(0);
+  });
+
+  it('activeDeck が null のとき addCombo は何もしない', () => {
+    const { result } = renderHook(() => useDeckStore());
+    act(() => {
+      result.current.saveNewDeck({ name: 'A', entries: [] });
+      // activeDeck を設定しない
+    });
+    act(() => {
+      result.current.addCombo({ name: 'X', condition: { items: [] } });
+    });
+    expect(result.current.decks[0].combos).toHaveLength(0);
+  });
+
+  it('activeDeck が null のとき updateCombo は何もしない', () => {
+    const { result } = renderHook(() => useDeckStore());
+    act(() => {
+      result.current.updateCombo('any-id', { name: 'X' });
+    });
+    expect(result.current.decks).toHaveLength(0);
+  });
+
+  it('activeDeck が null のとき deleteCombo は何もしない', () => {
+    const { result } = renderHook(() => useDeckStore());
+    act(() => {
+      result.current.deleteCombo('any-id');
+    });
+    expect(result.current.decks).toHaveLength(0);
+  });
+
+  it('renameDeck に空文字を渡しても名前が変わらない', () => {
+    const { result } = renderHook(() => useDeckStore());
+    act(() => {
+      const deck = result.current.saveNewDeck({ name: '元の名前', entries: [] });
+      result.current.setActiveDeck(deck.id);
+    });
+    act(() => {
+      result.current.renameDeck(result.current.decks[0].id, '   ');
+    });
+    expect(result.current.decks[0].name).toBe('元の名前');
+  });
+
+  it('2デッキある状態で renameDeck すると対象デッキのみ名前が変わる', () => {
+    const { result } = renderHook(() => useDeckStore());
+    let deckAId: string;
+    act(() => {
+      const a = result.current.saveNewDeck({ name: 'A', entries: [] });
+      deckAId = a.id;
+    });
+    act(() => {
+      result.current.saveNewDeck({ name: 'B', entries: [] });
+    });
+    act(() => {
+      result.current.renameDeck(deckAId!, '新A');
+    });
+    expect(result.current.decks.find((d) => d.id === deckAId!)?.name).toBe('新A');
+    expect(result.current.decks.find((d) => d.name === 'B')).toBeDefined();
+  });
+
+  it('2エントリある状態で updateEntry すると対象エントリのみ枚数が変わる', () => {
+    const { result } = renderHook(() => useDeckStore());
+    const card1 = makeCard({ id: 'c1' });
+    const card2 = makeCard({ id: 'c2' });
+    act(() => {
+      const deck = result.current.saveNewDeck({
+        name: 'A',
+        entries: [{ card: card1, count: 2 }, { card: card2, count: 1 }],
+      });
+      result.current.setActiveDeck(deck.id);
+    });
+    act(() => {
+      result.current.updateEntry('c1', 4);
+    });
+    const entries = result.current.activeDeck?.entries ?? [];
+    expect(entries.find((e) => e.card.id === 'c1')?.count).toBe(4);
+    expect(entries.find((e) => e.card.id === 'c2')?.count).toBe(1);
+  });
+
+  it('2デッキある状態で非アクティブデッキを deleteDeck しても activeDeck は変わらない', () => {
+    const { result } = renderHook(() => useDeckStore());
+    let deckAId: string, deckBId: string;
+    act(() => {
+      const a = result.current.saveNewDeck({ name: 'A', entries: [] });
+      deckAId = a.id;
+    });
+    act(() => {
+      const b = result.current.saveNewDeck({ name: 'B', entries: [] });
+      deckBId = b.id;
+      result.current.setActiveDeck(deckAId!);
+    });
+    act(() => {
+      result.current.deleteDeck(deckBId!);
+    });
+    expect(result.current.decks).toHaveLength(1);
+    expect(result.current.activeDeck?.id).toBe(deckAId!);
+  });
+
+  it('2デッキある状態で addEntry するとアクティブデッキのみエントリが増える', () => {
+    const { result } = renderHook(() => useDeckStore());
+    let deckAId: string, deckBId: string;
+    act(() => {
+      const a = result.current.saveNewDeck({ name: 'A', entries: [] });
+      deckAId = a.id;
+    });
+    act(() => {
+      const b = result.current.saveNewDeck({ name: 'B', entries: [] });
+      deckBId = b.id;
+      result.current.setActiveDeck(deckAId!);
+    });
+    act(() => {
+      result.current.addEntry(makeEntry());
+    });
+    expect(result.current.decks.find((d) => d.id === deckAId!)?.entries).toHaveLength(1);
+    expect(result.current.decks.find((d) => d.id === deckBId!)?.entries).toHaveLength(0);
+  });
+
+  it('2デッキある状態で updateCard するとアクティブデッキのみ更新される', () => {
+    const { result } = renderHook(() => useDeckStore());
+    const card = makeCard({ id: 'c1', isKeyCard: false });
+    let deckAId: string, deckBId: string;
+    act(() => {
+      const a = result.current.saveNewDeck({ name: 'A', entries: [{ card, count: 2 }] });
+      deckAId = a.id;
+      result.current.setActiveDeck(deckAId);
+    });
+    act(() => {
+      const b = result.current.saveNewDeck({ name: 'B', entries: [] });
+      deckBId = b.id;
+    });
+    act(() => {
+      result.current.updateCard('c1', { isKeyCard: true });
+    });
+    expect(result.current.decks.find((d) => d.id === deckAId!)?.entries[0].card.isKeyCard).toBe(true);
+    expect(result.current.decks.find((d) => d.id === deckBId!)?.entries).toHaveLength(0);
+  });
+
+  it('2デッキある状態で importEntries するとアクティブデッキのみエントリが置換される', () => {
+    const { result } = renderHook(() => useDeckStore());
+    const card = makeCard({ id: 'c1' });
+    let deckAId: string, deckBId: string;
+    act(() => {
+      const a = result.current.saveNewDeck({ name: 'A', entries: [] });
+      deckAId = a.id;
+    });
+    act(() => {
+      const b = result.current.saveNewDeck({ name: 'B', entries: [] });
+      deckBId = b.id;
+      result.current.setActiveDeck(deckAId!);
+    });
+    act(() => {
+      result.current.importEntries([{ card, count: 2 }]);
+    });
+    expect(result.current.decks.find((d) => d.id === deckAId!)?.entries).toHaveLength(1);
+    expect(result.current.decks.find((d) => d.id === deckBId!)?.entries).toHaveLength(0);
+  });
+
+  it('2コンボある状態で updateCombo すると対象コンボのみ更新される', () => {
+    const { result } = renderHook(() => useDeckStore());
+    act(() => {
+      const deck = result.current.saveNewDeck({ name: 'A', entries: [] });
+      result.current.setActiveDeck(deck.id);
+    });
+    act(() => {
+      result.current.addCombo({ name: 'コンボ1', condition: { items: [{ type: 'keycard', minCount: 1 }] } });
+    });
+    act(() => {
+      result.current.addCombo({ name: 'コンボ2', condition: { items: [{ type: 'keycard', minCount: 1 }] } });
+    });
+    const comboId = result.current.activeDeck!.combos[0].id;
+    act(() => {
+      result.current.updateCombo(comboId, { name: '更新コンボ' });
+    });
+    expect(result.current.activeDeck?.combos[0].name).toBe('更新コンボ');
+    expect(result.current.activeDeck?.combos[1].name).toBe('コンボ2');
+  });
+
+  it('localStorage クリア後の addEntry は entries を変更しない（updateDeck null guard）', () => {
+    const { result } = renderHook(() => useDeckStore());
+    act(() => {
+      const deck = result.current.saveNewDeck({ name: 'A', entries: [] });
+      result.current.setActiveDeck(deck.id);
+    });
+    act(() => {
+      localStorage.clear();
+      result.current.addEntry(makeEntry());
+    });
+    expect(result.current.decks[0].entries).toHaveLength(0);
+  });
+
+  it('localStorage クリア後の updateCard は状態を変更しない（null guard）', () => {
+    const { result } = renderHook(() => useDeckStore());
+    const card = makeCard({ id: 'c1', isKeyCard: false });
+    act(() => {
+      const deck = result.current.saveNewDeck({ name: 'A', entries: [{ card, count: 1 }] });
+      result.current.setActiveDeck(deck.id);
+    });
+    act(() => {
+      localStorage.clear();
+      result.current.updateCard('c1', { isKeyCard: true });
+    });
+    expect(result.current.decks[0].entries[0].card.isKeyCard).toBe(false);
+  });
+
+  it('localStorage クリア後の importEntries は状態を変更しない（null guard）', () => {
+    const { result } = renderHook(() => useDeckStore());
+    act(() => {
+      const deck = result.current.saveNewDeck({ name: 'A', entries: [] });
+      result.current.setActiveDeck(deck.id);
+    });
+    act(() => {
+      localStorage.clear();
+      result.current.importEntries([makeEntry()]);
+    });
+    expect(result.current.decks[0].entries).toHaveLength(0);
   });
 });

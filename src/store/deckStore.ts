@@ -1,8 +1,69 @@
 import { useCallback, useState } from 'react';
+import { COMBO_CONDITION_TYPES, MAX_SAME_CARD } from '../types';
 import type { Card, Deck, DeckEntry, SavedCombo } from '../types';
+import { isCardLike } from '../logic/validator';
 
 const STORAGE_KEY = 'gcg-decks';
 const MAX_DECKS = 5;
+
+// -----------------------------------------------------------------------
+// localStorageデータの実行時型ガード
+// -----------------------------------------------------------------------
+
+function isValidCard(v: unknown): v is Card {
+  if (!v || typeof v !== 'object') return false;
+  const c = v as Record<string, unknown>;
+  return (
+    isCardLike(c) &&
+    typeof c.id === 'string' &&
+    typeof c.isKeyCard === 'boolean' &&
+    (c.terrain === undefined || typeof c.terrain === 'string') &&
+    (c.feature === undefined || typeof c.feature === 'string') &&
+    (c.link === undefined || typeof c.link === 'string')
+  );
+}
+
+function isValidEntry(v: unknown): v is DeckEntry {
+  if (!v || typeof v !== 'object') return false;
+  const e = v as Record<string, unknown>;
+  return (
+    Number.isInteger(e.count) &&
+    (e.count as number) >= 1 &&
+    (e.count as number) <= MAX_SAME_CARD &&
+    isValidCard(e.card)
+  );
+}
+
+function isValidCombo(v: unknown): v is SavedCombo {
+  if (!v || typeof v !== 'object') return false;
+  const c = v as Record<string, unknown>;
+  if (typeof c.id !== 'string' || typeof c.name !== 'string') return false;
+  if (!c.condition || typeof c.condition !== 'object') return false;
+  const items = (c.condition as Record<string, unknown>).items;
+  if (!Array.isArray(items)) return false;
+  return (items as unknown[]).every((item) => {
+    if (!item || typeof item !== 'object') return false;
+    const it = item as Record<string, unknown>;
+    return (
+      COMBO_CONDITION_TYPES.has(it.type as string) &&
+      Number.isInteger(it.minCount) && (it.minCount as number) >= 1
+    );
+  });
+}
+
+function isValidDeck(v: unknown): v is Deck {
+  if (!v || typeof v !== 'object') return false;
+  const d = v as Record<string, unknown>;
+  return (
+    typeof d.id === 'string' &&
+    typeof d.name === 'string' &&
+    typeof d.createdAt === 'string' &&
+    typeof d.updatedAt === 'string' &&
+    Array.isArray(d.entries) &&
+    (d.entries as unknown[]).every(isValidEntry) &&
+    (d.combos === undefined || (Array.isArray(d.combos) && (d.combos as unknown[]).every(isValidCombo)))
+  );
+}
 
 // -----------------------------------------------------------------------
 // localStorage 操作の純粋関数（テスト・直接利用可）
@@ -12,9 +73,10 @@ export function loadDecks(): Deck[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    const decks = JSON.parse(raw) as Deck[];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
     // 後方互換: combos フィールドがない既存デッキに空配列を補完
-    return decks.map((d) => ({ ...d, combos: d.combos ?? [] }));
+    return parsed.filter(isValidDeck).map((d) => ({ ...d, combos: d.combos ?? [] }));
   } catch {
     return [];
   }
@@ -141,6 +203,7 @@ export function useDeckStore(): DeckStore {
   );
 
   const handleRenameDeck = useCallback((id: string, name: string) => {
+    if (!name.trim()) return;
     const updated = updateDeck(id, { name });
     if (updated) setDecks((prev) => prev.map((d) => (d.id === id ? updated : d)));
   }, []);

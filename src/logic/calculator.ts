@@ -1,3 +1,7 @@
+import {
+  DECK_SIZE,
+  HAND_SIZE,
+} from '../types';
 import type {
   Card,
   ComboCondition,
@@ -7,9 +11,6 @@ import type {
   ExpectedValueResult,
   KeyCardProbability,
 } from '../types';
-
-const DECK_SIZE = 50;
-const HAND_SIZE = 5;
 
 // C(n,k) の計算。k>n のとき 0、桁あふれ防止のため逐次乗除を使用
 export function combination(n: number, k: number): number {

@@ -1,6 +1,5 @@
+import { HAND_SIZE } from '../types';
 import type { Card, DeckEntry, MultiSimulationStats, PlayabilityStats, SimulationResult } from '../types';
-
-const HAND_SIZE = 5;
 
 // Fisher–Yates シャッフル（元配列を変更しない）
 export function fisherYatesShuffle<T>(array: T[]): T[] {
