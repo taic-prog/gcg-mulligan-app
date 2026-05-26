@@ -260,6 +260,7 @@ export function runMultipleSimulations(
   count: number,
   comboCheck?: (hand: Card[]) => boolean
 ): MultiSimulationStats {
+  const baseDeck = expandDeck(entries);
   let totalCost = 0;
   let totalCostSq = 0;
   let keyCardHitCount = 0;
@@ -267,7 +268,7 @@ export function runMultipleSimulations(
   const costFrequency: Record<number, number> = {};
 
   for (let i = 0; i < count; i++) {
-    const hand = drawHand(entries);
+    const hand = fisherYatesShuffle(baseDeck).slice(0, HAND_SIZE);
     const cost = hand.reduce((sum, card) => sum + card.cost, 0);
     totalCost += cost;
     totalCostSq += cost * cost;

@@ -77,9 +77,9 @@ export default function ComboCalculator({
 
   // 理論確率（50枚デッキから）
   const result = useMemo(() => {
-    if (!condition || !items.every(isItemComplete)) return null;
+    if (!condition || !condition.items.every(isItemComplete)) return null;
     return calculateComboProbability(entries, condition);
-  }, [condition, entries, items]);
+  }, [condition, entries]);
 
   // マリガン後確率：初期手札を除いた残り枚数デッキから計算
   const remainingEntries = useMemo(
@@ -88,20 +88,20 @@ export default function ComboCalculator({
   );
 
   const mulliganResult = useMemo(() => {
-    if (!remainingEntries || !condition || !items.every(isItemComplete)) return null;
+    if (!remainingEntries || !condition || !condition.items.every(isItemComplete)) return null;
     return calculateComboProbability(remainingEntries, condition);
-  }, [remainingEntries, condition, items]);
+  }, [remainingEntries, condition]);
 
   // 現在の手札でのコンボ成立判定
   const handMatch = useMemo(() => {
-    if (!currentHand || !condition || !items.every(isItemComplete)) return null;
+    if (!currentHand || !condition || !condition.items.every(isItemComplete)) return null;
     return checkComboCondition(currentHand, condition);
-  }, [currentHand, condition, items]);
+  }, [currentHand, condition]);
 
   useEffect(() => {
-    const complete = items.length > 0 && items.every(isItemComplete) ? condition : null;
+    const complete = condition && condition.items.every(isItemComplete) ? condition : null;
     onConditionChange?.(complete);
-  }, [condition, items, onConditionChange]);
+  }, [condition, onConditionChange]);
 
   function addItem() {
     setItems((prev) => [...prev, { type: 'card', minCount: 1 }]);

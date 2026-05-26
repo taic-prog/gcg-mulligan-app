@@ -1,11 +1,16 @@
-import { useEffect, useState } from 'react';
-import { simulateCustomPlayability, simulatePlayability } from '../../logic/simulator';
+import { useEffect, useRef, useState } from 'react';
 import type { DeckEntry, PlayabilityStats } from '../../types';
 import styles from './PlayabilityCard.module.css';
 
 interface Props {
   entries: DeckEntry[];
 }
+
+type SimRequest =
+  | { id: number; type: 'playability'; entries: DeckEntry[]; multiCardMode: boolean; trials: number }
+  | { id: number; type: 'custom'; entries: DeckEntry[]; turnCardIds: string[][]; trials: number };
+
+type SimResponse = { id: number; type: 'playability' | 'custom'; result: PlayabilityStats };
 
 function RateItem({
   label,
@@ -39,14 +44,45 @@ export default function PlayabilityCard({ entries }: Props) {
   const [customStats, setCustomStats] = useState<PlayabilityStats | null>(null);
   const [customRunning, setCustomRunning] = useState(false);
 
+  const workerRef = useRef<Worker | null>(null);
+  const nextIdRef = useRef(0);
+  const pendingPlayabilityId = useRef(-1);
+  const pendingCustomId = useRef(-1);
+
+  // Worker を mount 時に1回だけ生成し、unmount 時に破棄
+  useEffect(() => {
+    const worker = new Worker(
+      new URL('../../workers/simulator.worker.ts', import.meta.url),
+      { type: 'module' },
+    );
+    worker.onmessage = (e: MessageEvent<SimResponse>) => {
+      const { id, type, result } = e.data;
+      if (type === 'playability' && id === pendingPlayabilityId.current) {
+        setStats(result);
+        setRunning(false);
+      } else if (type === 'custom' && id === pendingCustomId.current) {
+        setCustomStats(result);
+        setCustomRunning(false);
+      }
+      // id が一致しない場合は古いリクエストの応答なので無視
+    };
+    workerRef.current = worker;
+    return () => worker.terminate();
+  }, []);
+
+  // entries 変更時にシミュレーションを Worker で実行
   useEffect(() => {
     setRunning(true);
     setStats(null);
-    const timer = setTimeout(() => {
-      setStats(simulatePlayability(entries, true, 10000));
-      setRunning(false);
-    }, 0);
-    return () => clearTimeout(timer);
+    const id = nextIdRef.current++;
+    pendingPlayabilityId.current = id;
+    workerRef.current?.postMessage({
+      id,
+      type: 'playability',
+      entries,
+      multiCardMode: true,
+      trials: 10000,
+    } satisfies SimRequest);
   }, [entries]);
 
   useEffect(() => {
@@ -54,7 +90,6 @@ export default function PlayabilityCard({ entries }: Props) {
     setCustomStats(null);
   }, [entries]);
 
-  // T1に動けるカードがデッキに存在するか（コスト1 かつ Lv≤1）
   const canPlayT1 = entries.some((e) => e.card.cost === 1 && e.card.level <= 1);
 
   function updateSel(turnIdx: number, id: string, add: boolean) {
@@ -73,11 +108,15 @@ export default function PlayabilityCard({ entries }: Props) {
   function runCustomSim() {
     setCustomRunning(true);
     setCustomStats(null);
-    setTimeout(() => {
-      const result = simulateCustomPlayability(entries, selPerTurn);
-      setCustomStats(result);
-      setCustomRunning(false);
-    }, 0);
+    const id = nextIdRef.current++;
+    pendingCustomId.current = id;
+    workerRef.current?.postMessage({
+      id,
+      type: 'custom',
+      entries,
+      turnCardIds: selPerTurn.map((s) => [...s]),
+      trials: 10000,
+    } satisfies SimRequest);
   }
 
   const anySelected = selPerTurn.some((s) => s.size > 0);
