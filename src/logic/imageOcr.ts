@@ -157,7 +157,7 @@ export async function recognizeDeckImage(
   const seen = new Set<string>();
   const strictMatches: WordBox[] = [];
   for (const w of words) {
-    const norm = w.text.toUpperCase().replace(/[^A-Z0-9\-]/g, '');
+    const norm = w.text.toUpperCase().replace(/[^A-Z0-9-]/g, '');
     if (CARD_NO_RE.test(norm) && !seen.has(norm)) {
       seen.add(norm);
       strictMatches.push({ ...w, text: norm });

@@ -19,7 +19,7 @@ export function parseDeckText(text: string): ParsedLine[] {
   const result: ParsedLine[] = [];
 
   for (const raw of text.split(/\r?\n/)) {
-    const line = raw.trim().replace(/[\s　]+/g, ' ');
+    const line = raw.trim().replace(/[\s\u3000]+/g, ' ');
     if (!line || line.startsWith('#') || line.startsWith('//')) continue;
 
     const cardNoMatch = line.match(CARD_NO_LOOSE);

@@ -140,7 +140,7 @@ export function simulateBothPlayabilityModes(
 
     // 単体モード（Lv ≤ ターン番号のカードのみ使用可能）
     {
-      let hand: Card[] = deck.slice(0, 5);
+      const hand: Card[] = deck.slice(0, 5);
       let ptr = 5;
 
       hand.push(deck[ptr++]);
@@ -217,7 +217,7 @@ export function simulateCustomPlayability(
 
   for (let i = 0; i < trials; i++) {
     const deck = fisherYatesShuffle(baseDeck);
-    let hand: Card[] = deck.slice(0, 5);
+    const hand: Card[] = deck.slice(0, 5);
     let ptr = 5;
 
     const hits: boolean[] = [];
