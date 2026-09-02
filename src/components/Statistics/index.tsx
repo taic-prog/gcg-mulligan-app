@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { runMultipleSimulations } from '../../logic/simulator';
 import { useDeckReady } from '../../hooks/useDeckReady';
+import { useMultiSimWorker } from '../../hooks/useMultiSimWorker';
 import type { MultiSimulationStats } from '../../types';
 import DeckNotReady from '../common/DeckNotReady';
 import SimHistogram from './SimHistogram';
@@ -13,15 +13,14 @@ export default function Statistics() {
   const { activeDeck, total, ready } = useDeckReady();
   const [stats, setStats] = useState<MultiSimulationStats | null>(null);
   const [running, setRunning] = useState(false);
+  const runSim = useMultiSimWorker();
 
-  function handleRun(count: number) {
+  async function handleRun(count: number) {
     if (!activeDeck) return;
     setRunning(true);
-    // setTimeout で UI をブロックしない（NFR-02 対応）
-    setTimeout(() => {
-      setStats(runMultipleSimulations(activeDeck.entries, count));
-      setRunning(false);
-    }, 0);
+    const result = await runSim(activeDeck.entries, count);
+    setStats(result);
+    setRunning(false);
   }
 
   if (!activeDeck || !ready) {

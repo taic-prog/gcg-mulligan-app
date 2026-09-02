@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { drawHand, runMultipleSimulations } from '../../logic/simulator';
+import { drawHand } from '../../logic/simulator';
 import { useDeckReady } from '../../hooks/useDeckReady';
+import { useMultiSimWorker } from '../../hooks/useMultiSimWorker';
 import type { Card, MultiSimulationStats } from '../../types';
 import ComboProbabilityList from '../common/ComboProbabilityList';
 import DeckNotReady from '../common/DeckNotReady';
@@ -21,6 +22,7 @@ export default function TestDraw() {
   const [mulliganUsed, setMulliganUsed] = useState(false);
   const [simStats, setSimStats] = useState<MultiSimulationStats | null>(null);
   const [simRunning, setSimRunning] = useState(false);
+  const runSim = useMultiSimWorker();
 
   function clearHand() {
     setInitialHand(null);
@@ -55,14 +57,12 @@ export default function TestDraw() {
     setMulliganUsed(true);
   }
 
-  function handleRunSim(count: number) {
+  async function handleRunSim(count: number) {
     if (!activeDeck) return;
     setSimRunning(true);
-    // setTimeout で UI をブロックしない（NFR-02 対応）
-    setTimeout(() => {
-      setSimStats(runMultipleSimulations(activeDeck.entries, count));
-      setSimRunning(false);
-    }, 0);
+    const result = await runSim(activeDeck.entries, count);
+    setSimStats(result);
+    setSimRunning(false);
   }
 
   if (!activeDeck || !ready) {
