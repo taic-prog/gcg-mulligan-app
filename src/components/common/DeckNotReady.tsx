@@ -14,10 +14,18 @@ export default function DeckNotReady({ total, hint }: Props) {
       </div>
     );
   }
+  if (total !== 50) {
+    return (
+      <div className={styles.noData}>
+        <p>デッキが 50 枚ではありません（現在 {total} 枚）</p>
+        <p className={styles.noDataHint}>デッキ編集画面でちょうど 50 枚に調整してください</p>
+      </div>
+    );
+  }
   return (
     <div className={styles.noData}>
-      <p>デッキが 50 枚ではありません（現在 {total} 枚）</p>
-      <p className={styles.noDataHint}>デッキ編集画面でちょうど 50 枚に調整してください</p>
+      <p>デッキの構成に問題があります</p>
+      <p className={styles.noDataHint}>デッキ編集画面で使用色などの制約を確認してください</p>
     </div>
   );
 }

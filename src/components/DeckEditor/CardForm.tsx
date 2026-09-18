@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { getAllCards } from '../../logic/cardCache';
 import { fetchCardInfo } from '../../logic/cardFetch';
 import type { FetchedCardInfo } from '../../logic/cardFetch';
-import { buildCard, canAddCard, validateCard } from '../../logic/validator';
+import { buildCard, canAddCard, MAX_COLORS, validateCard } from '../../logic/validator';
 import { CARD_COLORS, CARD_NO_RE, CARD_TYPES, DECK_SIZE, MAX_COST, MAX_LEVEL, MAX_SAME_CARD } from '../../types';
 import type { Card, CardColor, CardType, DeckEntry } from '../../types';
 import styles from './DeckEditor.module.css';
@@ -157,10 +157,19 @@ export default function CardForm({ entries, onAdd }: Props) {
 
     if (errMsgs.length > 0) { setErrors(errMsgs); return; }
 
-    if (!canAddCard(entries, cardPartial.cardNo!, count)) {
+    if (!canAddCard(entries, cardPartial.cardNo!, count, form.color)) {
       const total = entries.reduce((s, e) => s + e.count, 0);
-      if (total + count > DECK_SIZE) errMsgs.push(`デッキが${DECK_SIZE}枚を超えます`);
-      else errMsgs.push(`カードNo.「${cardPartial.cardNo}」はこれ以上追加できません（${MAX_SAME_CARD}枚上限）`);
+      const sameCardCount = entries
+        .filter((e) => e.card.cardNo === cardPartial.cardNo)
+        .reduce((s, e) => s + e.count, 0);
+      const colors = new Set(entries.map((e) => e.card.color)).add(form.color);
+      if (total + count > DECK_SIZE) {
+        errMsgs.push(`デッキが${DECK_SIZE}枚を超えます`);
+      } else if (sameCardCount + count > MAX_SAME_CARD) {
+        errMsgs.push(`カードNo.「${cardPartial.cardNo}」はこれ以上追加できません（${MAX_SAME_CARD}枚上限）`);
+      } else if (colors.size > MAX_COLORS) {
+        errMsgs.push(`使用色は${MAX_COLORS}色までです（${form.color}を追加すると${colors.size}色になります）`);
+      }
       setErrors(errMsgs);
       return;
     }

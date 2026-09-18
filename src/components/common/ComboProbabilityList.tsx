@@ -1,16 +1,11 @@
 import { useMemo } from 'react';
-import {
-  calculateComboProbability,
-  checkComboCondition,
-  computeRemainingEntries,
-} from '../../logic/calculator';
+import { calculateComboProbability, checkComboCondition } from '../../logic/calculator';
 import type { Card, DeckEntry, SavedCombo } from '../../types';
 import styles from './ComboProbabilityList.module.css';
 
 interface Props {
   combos: SavedCombo[];
   entries: DeckEntry[];
-  initialHand?: Card[];    // 引いた初期手札（残り枚数でマリガン確率を計算）
   currentHand?: Card[];    // コンボ成立判定に使う手札
   mulliganOnly?: boolean;  // マリガン後確率のみ表示（初期手札確率を非表示）
 }
@@ -18,34 +13,20 @@ interface Props {
 interface RowProps {
   combo: SavedCombo;
   entries: DeckEntry[];
-  remainingEntries: DeckEntry[] | null;
   currentHand?: Card[];
   mulliganOnly?: boolean;
 }
 
-function ComboRow({ combo, entries, remainingEntries, currentHand, mulliganOnly }: RowProps) {
+function ComboRow({ combo, entries, currentHand, mulliganOnly }: RowProps) {
   const result = useMemo(
     () => calculateComboProbability(entries, combo.condition),
     [entries, combo]
-  );
-
-  const mulliganResult = useMemo(
-    () => (remainingEntries ? calculateComboProbability(remainingEntries, combo.condition) : null),
-    [remainingEntries, combo]
   );
 
   const handMatch = useMemo(
     () => (currentHand ? checkComboCondition(currentHand, combo.condition) : null),
     [currentHand, combo]
   );
-
-  const remainingCount = remainingEntries?.reduce((s, e) => s + e.count, 0);
-  const mulliganLabel = remainingCount !== undefined
-    ? `マリガン後（残り${remainingCount}枚）`
-    : 'マリガン後（理論値）';
-  const mulliganProb = remainingEntries
-    ? mulliganResult?.probInitialHand
-    : result?.probAfterMulligan;
 
   return (
     <div className={styles.row}>
@@ -70,9 +51,9 @@ function ComboRow({ combo, entries, remainingEntries, currentHand, mulliganOnly 
           </div>
         )}
         <div className={styles.probItem}>
-          <span className={styles.probLabel}>{mulliganLabel}</span>
+          <span className={styles.probLabel}>マリガン後</span>
           <span className={styles.probValue}>
-            {mulliganProb !== undefined ? `${(mulliganProb * 100).toFixed(2)}%` : '—'}
+            {result ? `${(result.probAfterMulligan * 100).toFixed(2)}%` : '—'}
           </span>
         </div>
       </div>
@@ -80,12 +61,7 @@ function ComboRow({ combo, entries, remainingEntries, currentHand, mulliganOnly 
   );
 }
 
-export default function ComboProbabilityList({ combos, entries, initialHand, currentHand, mulliganOnly }: Props) {
-  const remainingEntries = useMemo(
-    () => (initialHand ? computeRemainingEntries(entries, initialHand) : null),
-    [entries, initialHand]
-  );
-
+export default function ComboProbabilityList({ combos, entries, currentHand, mulliganOnly }: Props) {
   if (combos.length === 0) {
     return (
       <div className={styles.card}>
@@ -104,7 +80,6 @@ export default function ComboProbabilityList({ combos, entries, initialHand, cur
             key={combo.id}
             combo={combo}
             entries={entries}
-            remainingEntries={remainingEntries}
             currentHand={currentHand}
             mulliganOnly={mulliganOnly}
           />

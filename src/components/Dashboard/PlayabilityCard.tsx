@@ -66,6 +66,12 @@ export default function PlayabilityCard({ entries }: Props) {
       }
       // id が一致しない場合は古いリクエストの応答なので無視
     };
+    worker.onerror = () => {
+      // Worker内で例外が発生すると該当リクエストの応答が届かず「計算中…」のまま
+      // 固まってしまうため、保留中の状態を解除する
+      setRunning(false);
+      setCustomRunning(false);
+    };
     workerRef.current = worker;
     return () => worker.terminate();
   }, []);

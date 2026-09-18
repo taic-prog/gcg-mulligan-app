@@ -164,22 +164,43 @@ describe('validateCard', () => {
 
 describe('canAddCard', () => {
   it('デッキ50枚フル時は追加不可', () => {
-    const entries: DeckEntry[] = [{ card: makeCard({ cardNo: 'A' }), count: 50 }];
-    expect(canAddCard(entries, 'B', 1)).toBe(false);
+    const entries: DeckEntry[] = [{ card: makeCard({ cardNo: 'A', color: '青' }), count: 50 }];
+    expect(canAddCard(entries, 'B', 1, '青')).toBe(false);
   });
 
   it('同一cardNo 4枚到達後は追加不可', () => {
-    const entries: DeckEntry[] = [{ card: makeCard({ cardNo: 'A' }), count: 4 }];
-    expect(canAddCard(entries, 'A', 1)).toBe(false);
+    const entries: DeckEntry[] = [{ card: makeCard({ cardNo: 'A', color: '青' }), count: 4 }];
+    expect(canAddCard(entries, 'A', 1, '青')).toBe(false);
   });
 
   it('同一cardNo が3枚なら1枚追加可', () => {
-    const entries: DeckEntry[] = [{ card: makeCard({ cardNo: 'A' }), count: 3 }];
-    expect(canAddCard(entries, 'A', 1)).toBe(true);
+    const entries: DeckEntry[] = [{ card: makeCard({ cardNo: 'A', color: '青' }), count: 3 }];
+    expect(canAddCard(entries, 'A', 1, '青')).toBe(true);
   });
 
   it('空デッキへの追加は可', () => {
-    expect(canAddCard([], 'A', 1)).toBe(true);
+    expect(canAddCard([], 'A', 1, '青')).toBe(true);
+  });
+
+  it('T-VAL-11: 既に2色使用中に3色目を追加すると不可', () => {
+    const entries: DeckEntry[] = [
+      { card: makeCard({ cardNo: 'A', color: '青' }), count: 1 },
+      { card: makeCard({ cardNo: 'B', color: '赤' }), count: 1 },
+    ];
+    expect(canAddCard(entries, 'C', 1, '緑')).toBe(false);
+  });
+
+  it('T-VAL-12: 既存2色のいずれかと同じ色なら追加可', () => {
+    const entries: DeckEntry[] = [
+      { card: makeCard({ cardNo: 'A', color: '青' }), count: 1 },
+      { card: makeCard({ cardNo: 'B', color: '赤' }), count: 1 },
+    ];
+    expect(canAddCard(entries, 'C', 1, '青')).toBe(true);
+  });
+
+  it('T-VAL-13: 1色のみ使用中に2色目を追加するのは可', () => {
+    const entries: DeckEntry[] = [{ card: makeCard({ cardNo: 'A', color: '青' }), count: 1 }];
+    expect(canAddCard(entries, 'B', 1, '赤')).toBe(true);
   });
 });
 

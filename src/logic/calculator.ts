@@ -93,24 +93,36 @@ function calculateCostDistribution(entries: DeckEntry[]): Record<number, number>
   return result;
 }
 
+// 1枚のカードが複数条件に二重計上されないよう、条件をリスト順に評価し
+// マッチしたカードは以降の条件から除外して判定する（calculateComboProbability の
+// deckCount 排他ロジックと同じ「先勝ち」方式に揃えている）
 export function checkComboCondition(hand: Card[], condition: ComboCondition): boolean {
-  const check = (item: ComboConditionItem): boolean => {
-    if (item.type === 'card') {
-      return hand.filter((c) => c.id === item.cardId).length >= item.minCount;
-    } else if (item.type === 'attr') {
-      return hand.filter(
-        (c) =>
-          (item.filterCardType === undefined || c.cardType === item.filterCardType) &&
-          (item.filterColor === undefined || c.color === item.filterColor) &&
-          (item.filterLevel === undefined || c.level === item.filterLevel) &&
-          (item.filterCost === undefined || c.cost === item.filterCost)
-      ).length >= item.minCount;
-    } else {
-      // keycard
-      return hand.filter((c) => c.isKeyCard).length >= item.minCount;
+  const matches = (card: Card, item: ComboConditionItem): boolean => {
+    if (item.type === 'card') return card.id === item.cardId;
+    if (item.type === 'attr') {
+      return (
+        (item.filterCardType === undefined || card.cardType === item.filterCardType) &&
+        (item.filterColor === undefined || card.color === item.filterColor) &&
+        (item.filterLevel === undefined || card.level === item.filterLevel) &&
+        (item.filterCost === undefined || card.cost === item.filterCost)
+      );
     }
+    // keycard
+    return card.isKeyCard;
   };
-  return condition.items.every(check);
+
+  const used = new Array<boolean>(hand.length).fill(false);
+  for (const item of condition.items) {
+    let count = 0;
+    for (let i = 0; i < hand.length && count < item.minCount; i++) {
+      if (!used[i] && matches(hand[i], item)) {
+        used[i] = true;
+        count++;
+      }
+    }
+    if (count < item.minCount) return false;
+  }
+  return true;
 }
 
 // 初期手札を除いた残りのデッキエントリを返す
@@ -161,8 +173,9 @@ export function calculateComboProbability(
   const totalDeck = entries.reduce((s, e) => s + e.count, 0);
   if (totalDeck < HAND_SIZE) return null;
 
-  // カード指定条件のカードIDを収集（コスト/レベル条件から除外するため）
-  const specifiedCardIds = new Set(
+  // 各条件が対象とするカードは他条件と重複させず、リスト順に排他的に確保する。
+  // 'card'型は特定の1銘柄を指すため、順序に関わらず先に確保する
+  const claimedCardIds = new Set(
     condition.items
       .filter((i) => i.type === 'card' && i.cardId)
       .map((i) => i.cardId!)
@@ -182,22 +195,22 @@ export function calculateComboProbability(
           item.filterLevel === undefined &&
           item.filterCost === undefined
         ) return null;
-        const deckCount = entries
-          .filter(
-            (e) =>
-              (item.filterCardType === undefined || e.card.cardType === item.filterCardType) &&
-              (item.filterColor === undefined || e.card.color === item.filterColor) &&
-              (item.filterLevel === undefined || e.card.level === item.filterLevel) &&
-              (item.filterCost === undefined || e.card.cost === item.filterCost) &&
-              !specifiedCardIds.has(e.card.id)
-          )
-          .reduce((s, e) => s + e.count, 0);
+        const matched = entries.filter(
+          (e) =>
+            (item.filterCardType === undefined || e.card.cardType === item.filterCardType) &&
+            (item.filterColor === undefined || e.card.color === item.filterColor) &&
+            (item.filterLevel === undefined || e.card.level === item.filterLevel) &&
+            (item.filterCost === undefined || e.card.cost === item.filterCost) &&
+            !claimedCardIds.has(e.card.id)
+        );
+        matched.forEach((e) => claimedCardIds.add(e.card.id));
+        const deckCount = matched.reduce((s, e) => s + e.count, 0);
         return { deckCount, minCount: item.minCount };
       } else {
         // keycard
-        const deckCount = entries
-          .filter((e) => e.card.isKeyCard && !specifiedCardIds.has(e.card.id))
-          .reduce((s, e) => s + e.count, 0);
+        const matched = entries.filter((e) => e.card.isKeyCard && !claimedCardIds.has(e.card.id));
+        matched.forEach((e) => claimedCardIds.add(e.card.id));
+        const deckCount = matched.reduce((s, e) => s + e.count, 0);
         return { deckCount, minCount: item.minCount };
       }
     }

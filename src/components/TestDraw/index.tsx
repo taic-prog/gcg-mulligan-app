@@ -60,9 +60,13 @@ export default function TestDraw() {
   async function handleRunSim(count: number) {
     if (!activeDeck) return;
     setSimRunning(true);
-    const result = await runSim(activeDeck.entries, count);
-    setSimStats(result);
-    setSimRunning(false);
+    try {
+      setSimStats(await runSim(activeDeck.entries, count));
+    } catch {
+      setSimStats(null);
+    } finally {
+      setSimRunning(false);
+    }
   }
 
   if (!activeDeck || !ready) {
@@ -169,7 +173,6 @@ export default function TestDraw() {
       <ComboProbabilityList
         combos={activeDeck.combos}
         entries={activeDeck.entries}
-        initialHand={initialHand ?? undefined}
         currentHand={mulliganHand ?? initialHand ?? undefined}
         mulliganOnly
       />

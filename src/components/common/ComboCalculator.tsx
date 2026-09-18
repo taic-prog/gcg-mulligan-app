@@ -1,9 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  calculateComboProbability,
-  checkComboCondition,
-  computeRemainingEntries,
-} from '../../logic/calculator';
+import { calculateComboProbability, checkComboCondition } from '../../logic/calculator';
 import type {
   Card,
   CardColor,
@@ -20,7 +16,6 @@ interface Props {
   entries: DeckEntry[];
   initialCondition?: ComboCondition;  // 編集開始時に状態を初期化する
   showProbability?: boolean;          // 確率表示の有無（デフォルト true）
-  initialHand?: Card[];
   currentHand?: Card[];
   onConditionChange?: (condition: ComboCondition | null) => void;
 }
@@ -41,7 +36,6 @@ export default function ComboCalculator({
   entries,
   initialCondition,
   showProbability = true,
-  initialHand,
   currentHand,
   onConditionChange,
 }: Props) {
@@ -80,17 +74,6 @@ export default function ComboCalculator({
     if (!condition || !condition.items.every(isItemComplete)) return null;
     return calculateComboProbability(entries, condition);
   }, [condition, entries]);
-
-  // マリガン後確率：初期手札を除いた残り枚数デッキから計算
-  const remainingEntries = useMemo(
-    () => (initialHand ? computeRemainingEntries(entries, initialHand) : null),
-    [entries, initialHand]
-  );
-
-  const mulliganResult = useMemo(() => {
-    if (!remainingEntries || !condition || !condition.items.every(isItemComplete)) return null;
-    return calculateComboProbability(remainingEntries, condition);
-  }, [remainingEntries, condition]);
 
   // 現在の手札でのコンボ成立判定
   const handMatch = useMemo(() => {
@@ -143,25 +126,16 @@ export default function ComboCalculator({
       const entry = entries.find((e) => e.card.id === item.cardId);
       return Math.min(entry?.count ?? 4, 5);
     } else if (item.type === 'attr') {
-      return Math.min(attrMatchCount(item) || 5, 5);
+      // 対象0枚でも「1枚以上」は選択肢として残す（|| だと 0 が falsy で 5 に化けるため Math.max を使う）
+      return Math.min(Math.max(attrMatchCount(item), 1), 5);
     } else {
       // keycard
       const total = entries
         .filter((e) => e.card.isKeyCard && !usedCardIds.has(e.card.id))
         .reduce((s, e) => s + e.count, 0);
-      return Math.min(total || 5, 5);
+      return Math.min(Math.max(total, 1), 5);
     }
   }
-
-  const remainingCount = remainingEntries?.reduce((s, e) => s + e.count, 0) ?? 45;
-
-  const mulliganLabel = initialHand
-    ? `マリガン後（残り${remainingCount}枚）`
-    : 'マリガン後（理論値）';
-
-  const mulliganProb = initialHand
-    ? mulliganResult?.probInitialHand
-    : result?.probAfterMulligan;
 
   return (
     <div className={styles.card}>
@@ -321,10 +295,8 @@ export default function ComboCalculator({
               <span className={styles.probValue}>{(result.probInitialHand * 100).toFixed(2)}%</span>
             </div>
             <div className={styles.probItem}>
-              <span className={styles.probLabel}>{mulliganLabel}</span>
-              <span className={styles.probValue}>
-                {mulliganProb !== undefined ? `${(mulliganProb * 100).toFixed(2)}%` : '—'}
-              </span>
+              <span className={styles.probLabel}>マリガン後</span>
+              <span className={styles.probValue}>{(result.probAfterMulligan * 100).toFixed(2)}%</span>
             </div>
           </div>
           {handMatch !== null && (

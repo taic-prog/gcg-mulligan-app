@@ -18,9 +18,13 @@ export default function Statistics() {
   async function handleRun(count: number) {
     if (!activeDeck) return;
     setRunning(true);
-    const result = await runSim(activeDeck.entries, count);
-    setStats(result);
-    setRunning(false);
+    try {
+      setStats(await runSim(activeDeck.entries, count));
+    } catch {
+      setStats(null);
+    } finally {
+      setRunning(false);
+    }
   }
 
   if (!activeDeck || !ready) {

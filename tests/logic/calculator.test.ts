@@ -224,6 +224,32 @@ describe('checkComboCondition', () => {
     expect(checkComboCondition(hand, condition)).toBe(true);
   });
 
+  it('同一の1枚で2条件を二重に満たすことはできない（calculateComboProbabilityの排他ロジックと整合）', () => {
+    const hand = [makeHandCard({ id: 'a', color: '赤', isKeyCard: true })];
+    const condition: ComboCondition = {
+      items: [
+        { type: 'attr', filterColor: '赤', minCount: 1 },
+        { type: 'keycard', minCount: 1 },
+      ],
+    };
+    // 手札は1枚しかなく、先勝ちでattr条件に確保されるためkeycard条件は満たせない
+    expect(checkComboCondition(hand, condition)).toBe(false);
+  });
+
+  it('カードが2枚あれば2条件それぞれに1枚ずつ割り当てて両方成立する', () => {
+    const hand = [
+      makeHandCard({ id: 'a', color: '赤', isKeyCard: true }),
+      makeHandCard({ id: 'b', color: '赤', isKeyCard: true }),
+    ];
+    const condition: ComboCondition = {
+      items: [
+        { type: 'attr', filterColor: '赤', minCount: 1 },
+        { type: 'keycard', minCount: 1 },
+      ],
+    };
+    expect(checkComboCondition(hand, condition)).toBe(true);
+  });
+
   it('条件が0件なら常に成立', () => {
     const hand = [makeHandCard()];
     expect(checkComboCondition(hand, { items: [] })).toBe(true);
@@ -398,8 +424,10 @@ describe('calculateComboProbability', () => {
     expect(result?.probInitialHand).toBeGreaterThan(0);
   });
 
-  it('条件の合計 deckCount がデッキ枚数を超えるとき null を返す', () => {
-    // キーカードが赤でもある場合 keycard と attr(赤) で二重カウント → otherDeckCount<0
+  it('attr条件とkeycard条件の対象カードが完全に重複する場合、二重カウントされず確率0になる', () => {
+    // k1・k2 は「赤」かつ「キーカード」。keycard条件が先にこの2種を確保するため、
+    // attr(色=赤)条件に残るカードは0枚となり、AND全体の成立確率は0になる
+    // （修正前は二重カウントによりotherDeckCount<0となりnullを返していた）
     const entries: DeckEntry[] = [
       { card: makeHandCard({ id: 'k1', cardNo: 'K1', color: '赤', isKeyCard: true }), count: 3 },
       { card: makeHandCard({ id: 'k2', cardNo: 'K2', color: '赤', isKeyCard: true }), count: 3 },
@@ -410,7 +438,32 @@ describe('calculateComboProbability', () => {
         { type: 'attr', filterColor: '赤', minCount: 1 },
       ],
     };
-    expect(calculateComboProbability(entries, condition)).toBeNull();
+    const result = calculateComboProbability(entries, condition);
+    expect(result).not.toBeNull();
+    expect(result?.probInitialHand).toBe(0);
+    expect(result?.probAfterMulligan).toBe(0);
+  });
+
+  it('attr条件とkeycard条件が部分的に重複する場合、重複分を除いた枚数で計算される', () => {
+    // k1・k2: 赤かつキーカード（keycard条件が確保）
+    // r1・r2: 赤だがキーカードではない（attr条件はこちらのみを対象にする）
+    const entries: DeckEntry[] = [
+      { card: makeHandCard({ id: 'k1', cardNo: 'K1', color: '赤', isKeyCard: true }), count: 2 },
+      { card: makeHandCard({ id: 'k2', cardNo: 'K2', color: '赤', isKeyCard: true }), count: 1 },
+      { card: makeHandCard({ id: 'r1', cardNo: 'R1', color: '赤', isKeyCard: false }), count: 2 },
+      { card: makeHandCard({ id: 'r2', cardNo: 'R2', color: '赤', isKeyCard: false }), count: 1 },
+      { card: makeHandCard({ id: 'other', cardNo: 'OTHER', color: '青', isKeyCard: false }), count: 44 },
+    ];
+    const condition: ComboCondition = {
+      items: [
+        { type: 'keycard', minCount: 1 },
+        { type: 'attr', filterColor: '赤', minCount: 1 },
+      ],
+    };
+    const result = calculateComboProbability(entries, condition);
+    expect(result).not.toBeNull();
+    expect(result?.probInitialHand).toBeGreaterThan(0);
+    expect(result?.probInitialHand).toBeLessThanOrEqual(1);
   });
 
   it('card タイプと attr タイプの混合条件', () => {

@@ -1,5 +1,5 @@
 import { CARD_COLOR_SET, CARD_TYPE_SET, DECK_SIZE, MAX_COST, MAX_LEVEL, MAX_SAME_CARD } from '../types';
-import type { Card, DeckEntry, ValidationError } from '../types';
+import type { Card, CardColor, DeckEntry, ValidationError } from '../types';
 
 /** cardNo・name・cardType・color・level・cost の基本6フィールドを検証する共通コア */
 export function isCardLike(c: Record<string, unknown>): boolean {
@@ -13,7 +13,7 @@ export function isCardLike(c: Record<string, unknown>): boolean {
   );
 }
 
-const MAX_COLORS = 2;
+export const MAX_COLORS = 2;
 
 export function validateCard(card: Partial<Card>): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -72,7 +72,12 @@ export function validateDeck(entries: DeckEntry[]): ValidationError[] {
   return errors;
 }
 
-export function canAddCard(entries: DeckEntry[], cardNo: string, addCount: number): boolean {
+export function canAddCard(
+  entries: DeckEntry[],
+  cardNo: string,
+  addCount: number,
+  color: CardColor
+): boolean {
   const totalCount = entries.reduce((sum, e) => sum + e.count, 0);
   if (totalCount + addCount > DECK_SIZE) return false;
 
@@ -80,6 +85,10 @@ export function canAddCard(entries: DeckEntry[], cardNo: string, addCount: numbe
     .filter((e) => e.card.cardNo === cardNo)
     .reduce((sum, e) => sum + e.count, 0);
   if (sameCardCount + addCount > MAX_SAME_CARD) return false;
+
+  const colors = new Set(entries.map((e) => e.card.color));
+  colors.add(color);
+  if (colors.size > MAX_COLORS) return false;
 
   return true;
 }

@@ -88,7 +88,9 @@ const DIGIT_FIX: Record<string, string> = {
  */
 function tryFuzzyCardNo(text: string): string | null {
   const raw = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  if (raw.length < 6 || raw.length > 8) return null;
+  // 正規のカードNo.は英字2+数字2+数字3=7文字。1文字欠落（6文字）だと
+  // どの桁が欠けたか特定できず誤った桁を捏造しかねないため、7〜8文字のみ対象とする
+  if (raw.length < 7 || raw.length > 8) return null;
 
   const a0 = ALPHA_FIX[raw[0]] ?? raw[0];
   const a1 = ALPHA_FIX[raw[1]] ?? raw[1];
