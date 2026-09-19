@@ -27,9 +27,12 @@ export function parseDeckText(text: string): ParsedLine[] {
 
     const cardNo = cardNoMatch[0].toUpperCase();
     const rest = line.replace(cardNoMatch[0], '').trim();
-    const countMatch = rest.match(/x?(\d+)/i);
-    const count = countMatch
-      ? Math.min(Math.max(1, parseInt(countMatch[1], 10)), MAX_SAME_CARD)
+    // 枚数は独立したトークン（例: "3" "x3"）としてのみ拾う。
+    // 他サイトからコピーした行にカード名（例: "RX-78-2"）が併記されていても、
+    // ハイフンや文字を含むトークンは "^x?\d+$" に一致しないため誤検出しない
+    const countToken = rest.split(' ').find((t) => /^x?\d+$/i.test(t));
+    const count = countToken
+      ? Math.min(Math.max(1, parseInt(countToken.replace(/^x/i, ''), 10)), MAX_SAME_CARD)
       : 1;
 
     const existing = result.find((r) => r.cardNo === cardNo);

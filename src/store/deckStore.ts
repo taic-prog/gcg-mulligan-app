@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { COMBO_CONDITION_TYPES, MAX_SAME_CARD } from '../types';
-import type { Card, Deck, DeckEntry, SavedCombo } from '../types';
+import type { Card, ComboConditionItem, Deck, DeckEntry, SavedCombo } from '../types';
 import { isCardLike } from '../logic/validator';
 
 const STORAGE_KEY = 'gcg-decks';
@@ -34,24 +34,47 @@ function isValidEntry(v: unknown): v is DeckEntry {
   );
 }
 
+// item.type ごとの必須項目（isItemComplete/calculateComboProbability の前提と一致させる。
+// 'card'はcardId必須、'attr'は最低1つのフィルタ必須、'keycard'は追加項目なし）
+function isValidComboItem(v: unknown): v is ComboConditionItem {
+  if (!v || typeof v !== 'object') return false;
+  const it = v as Record<string, unknown>;
+  if (!COMBO_CONDITION_TYPES.has(it.type as string)) return false;
+  if (!Number.isInteger(it.minCount) || (it.minCount as number) < 1) return false;
+  if (it.type === 'card') return typeof it.cardId === 'string' && it.cardId.length > 0;
+  if (it.type === 'attr') {
+    return (
+      it.filterCardType !== undefined ||
+      it.filterColor !== undefined ||
+      it.filterLevel !== undefined ||
+      it.filterCost !== undefined
+    );
+  }
+  return true; // keycard
+}
+
 function isValidCombo(v: unknown): v is SavedCombo {
   if (!v || typeof v !== 'object') return false;
   const c = v as Record<string, unknown>;
   if (typeof c.id !== 'string' || typeof c.name !== 'string') return false;
   if (!c.condition || typeof c.condition !== 'object') return false;
   const items = (c.condition as Record<string, unknown>).items;
-  if (!Array.isArray(items)) return false;
-  return (items as unknown[]).every((item) => {
-    if (!item || typeof item !== 'object') return false;
-    const it = item as Record<string, unknown>;
-    return (
-      COMBO_CONDITION_TYPES.has(it.type as string) &&
-      Number.isInteger(it.minCount) && (it.minCount as number) >= 1
-    );
-  });
+  if (!Array.isArray(items) || items.length === 0) return false;
+  return (items as unknown[]).every(isValidComboItem);
 }
 
-function isValidDeck(v: unknown): v is Deck {
+// デッキ自体の形（id・name・entries配列など）だけを検証する。entries/combosの
+// 中身1件ずつの妥当性は loadDecks 側で個別にサニタイズするため、ここでは見ない
+interface RawDeckShape {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  entries: unknown[];
+  combos?: unknown;
+}
+
+function isRawDeckShape(v: unknown): v is RawDeckShape {
   if (!v || typeof v !== 'object') return false;
   const d = v as Record<string, unknown>;
   return (
@@ -59,9 +82,7 @@ function isValidDeck(v: unknown): v is Deck {
     typeof d.name === 'string' &&
     typeof d.createdAt === 'string' &&
     typeof d.updatedAt === 'string' &&
-    Array.isArray(d.entries) &&
-    (d.entries as unknown[]).every(isValidEntry) &&
-    (d.combos === undefined || (Array.isArray(d.combos) && (d.combos as unknown[]).every(isValidCombo)))
+    Array.isArray(d.entries)
   );
 }
 
@@ -75,8 +96,16 @@ export function loadDecks(): Deck[] {
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    // 後方互換: combos フィールドがない既存デッキに空配列を補完
-    return parsed.filter(isValidDeck).map((d) => ({ ...d, combos: d.combos ?? [] }));
+    // デッキ内の一部のカード/コンボだけが破損している場合でも、その要素だけを
+    // 間引きデッキ自体は保持する（1件の不正データでデッキ全体を失わないため）
+    return parsed.filter(isRawDeckShape).map((d) => ({
+      id: d.id,
+      name: d.name,
+      createdAt: d.createdAt,
+      updatedAt: d.updatedAt,
+      entries: d.entries.filter(isValidEntry),
+      combos: Array.isArray(d.combos) ? d.combos.filter(isValidCombo) : [],
+    }));
   } catch {
     return [];
   }

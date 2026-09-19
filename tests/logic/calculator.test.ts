@@ -236,6 +236,23 @@ describe('checkComboCondition', () => {
     expect(checkComboCondition(hand, condition)).toBe(false);
   });
 
+  it('card型条件はリスト内の記載順に関係なく常に優先確保される', () => {
+    // attr条件が先に記載されていても、card条件が指定するカードは
+    // calculateComboProbabilityと同様にcard条件専用として確保されるべき
+    const hand = [
+      makeHandCard({ id: 'X', cardType: 'ユニット' }),
+      makeHandCard({ id: 'Y', cardType: 'ユニット' }),
+    ];
+    const condition: ComboCondition = {
+      items: [
+        { type: 'attr', filterCardType: 'ユニット', minCount: 1 },
+        { type: 'card', cardId: 'X', minCount: 1 },
+      ],
+    };
+    // Yがattr条件に、Xがcard条件に割り当てられるため成立するはず
+    expect(checkComboCondition(hand, condition)).toBe(true);
+  });
+
   it('カードが2枚あれば2条件それぞれに1枚ずつ割り当てて両方成立する', () => {
     const hand = [
       makeHandCard({ id: 'a', color: '赤', isKeyCard: true }),

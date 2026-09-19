@@ -103,4 +103,10 @@ describe('parseDeckText', () => {
     const result = parseDeckText('GD01-001　2');
     expect(result).toEqual([{ cardNo: 'GD01-001', count: 2 }]);
   });
+
+  it('カード名に型式番号の数字が含まれていても末尾の枚数を正しく拾う', () => {
+    // "RX-78-2" 内の "78" を枚数と誤認識しないことを確認
+    const result = parseDeckText('GD01-001 RX-78-2 ガンダム 3');
+    expect(result).toEqual([{ cardNo: 'GD01-001', count: 3 }]);
+  });
 });

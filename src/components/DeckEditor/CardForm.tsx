@@ -49,6 +49,7 @@ export default function CardForm({ entries, onAdd }: Props) {
   const [suggestions, setSuggestions] = useState<CardRecord[]>([]);
   const [activeIdx, setActiveIdx] = useState(-1);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nameQueryIdRef = useRef(0);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -81,8 +82,11 @@ export default function CardForm({ entries, onAdd }: Props) {
   async function handleNameInput(value: string) {
     set('name', value);
     setActiveIdx(-1);
+    const queryId = ++nameQueryIdRef.current;
     if (!value.trim()) { setSuggestions([]); return; }
     const all = await getOrLoadAll();
+    // IndexedDB読み込み中に後続の入力があった場合、古い結果は破棄する
+    if (queryId !== nameQueryIdRef.current) return;
     const q = value.toLowerCase();
     const filtered = all.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 12);
     setSuggestions(filtered);

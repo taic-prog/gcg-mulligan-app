@@ -12,6 +12,20 @@ import type {
   KeyCardProbability,
 } from '../types';
 
+// attr条件のフィルタにカードが一致するか判定する（未指定のフィルタは無条件で一致扱い）。
+// calculateComboProbability・checkComboCondition・ComboCalculator.tsx で共有する
+export function matchesAttrFilter(
+  card: Card,
+  item: Pick<ComboConditionItem, 'filterCardType' | 'filterColor' | 'filterLevel' | 'filterCost'>
+): boolean {
+  return (
+    (item.filterCardType === undefined || card.cardType === item.filterCardType) &&
+    (item.filterColor === undefined || card.color === item.filterColor) &&
+    (item.filterLevel === undefined || card.level === item.filterLevel) &&
+    (item.filterCost === undefined || card.cost === item.filterCost)
+  );
+}
+
 // C(n,k) の計算。k>n のとき 0、桁あふれ防止のため逐次乗除を使用
 export function combination(n: number, k: number): number {
   if (k < 0 || k > n) return 0;
@@ -93,26 +107,19 @@ function calculateCostDistribution(entries: DeckEntry[]): Record<number, number>
   return result;
 }
 
-// 1枚のカードが複数条件に二重計上されないよう、条件をリスト順に評価し
-// マッチしたカードは以降の条件から除外して判定する（calculateComboProbability の
-// deckCount 排他ロジックと同じ「先勝ち」方式に揃えている）
+// 1枚のカードが複数条件に二重計上されないよう、マッチしたカードは以降の条件から
+// 除外して判定する。calculateComboProbability と同じく、'card'型条件はリスト内の
+// 記載順に関係なく常に最優先で確保し、attr/keycard型はリスト順に評価する
 export function checkComboCondition(hand: Card[], condition: ComboCondition): boolean {
   const matches = (card: Card, item: ComboConditionItem): boolean => {
     if (item.type === 'card') return card.id === item.cardId;
-    if (item.type === 'attr') {
-      return (
-        (item.filterCardType === undefined || card.cardType === item.filterCardType) &&
-        (item.filterColor === undefined || card.color === item.filterColor) &&
-        (item.filterLevel === undefined || card.level === item.filterLevel) &&
-        (item.filterCost === undefined || card.cost === item.filterCost)
-      );
-    }
+    if (item.type === 'attr') return matchesAttrFilter(card, item);
     // keycard
     return card.isKeyCard;
   };
 
   const used = new Array<boolean>(hand.length).fill(false);
-  for (const item of condition.items) {
+  const evaluate = (item: ComboConditionItem): boolean => {
     let count = 0;
     for (let i = 0; i < hand.length && count < item.minCount; i++) {
       if (!used[i] && matches(hand[i], item)) {
@@ -120,9 +127,12 @@ export function checkComboCondition(hand: Card[], condition: ComboCondition): bo
         count++;
       }
     }
-    if (count < item.minCount) return false;
-  }
-  return true;
+    return count >= item.minCount;
+  };
+
+  const cardItems = condition.items.filter((i) => i.type === 'card');
+  const otherItems = condition.items.filter((i) => i.type !== 'card');
+  return [...cardItems, ...otherItems].every(evaluate);
 }
 
 // 初期手札を除いた残りのデッキエントリを返す
@@ -196,12 +206,7 @@ export function calculateComboProbability(
           item.filterCost === undefined
         ) return null;
         const matched = entries.filter(
-          (e) =>
-            (item.filterCardType === undefined || e.card.cardType === item.filterCardType) &&
-            (item.filterColor === undefined || e.card.color === item.filterColor) &&
-            (item.filterLevel === undefined || e.card.level === item.filterLevel) &&
-            (item.filterCost === undefined || e.card.cost === item.filterCost) &&
-            !claimedCardIds.has(e.card.id)
+          (e) => matchesAttrFilter(e.card, item) && !claimedCardIds.has(e.card.id)
         );
         matched.forEach((e) => claimedCardIds.add(e.card.id));
         const deckCount = matched.reduce((s, e) => s + e.count, 0);

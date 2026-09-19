@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { calculateComboProbability, checkComboCondition } from '../../logic/calculator';
+import { calculateComboProbability, checkComboCondition, matchesAttrFilter } from '../../logic/calculator';
 import type {
   Card,
   CardColor,
@@ -63,11 +63,28 @@ export default function ComboCalculator({
     [entries]
   );
 
-  // card条件で使用済みのカードID（重複登録防止）
+  // card条件で使用済みのカードID（重複登録防止用。カード選択の候補絞り込みにのみ使う）
   const usedCardIds = useMemo(
     () => new Set(items.filter((i) => i.type === 'card' && i.cardId).map((i) => i.cardId!)),
     [items]
   );
+
+  // calculateComboProbability と同じ順序・ロジックで「各条件を評価する時点で
+  // 既に他条件に確保済みのカードID」を算出する（対象枚数表示・選択上限をバックエンドと一致させる）
+  const claimedIdsBeforeIndex = useMemo(() => {
+    const claimed = new Set(usedCardIds);
+    return items.map((item) => {
+      const snapshot = new Set(claimed);
+      if (item.type === 'attr') {
+        const matched = entries.filter((e) => matchesAttrFilter(e.card, item) && !claimed.has(e.card.id));
+        matched.forEach((e) => claimed.add(e.card.id));
+      } else if (item.type === 'keycard') {
+        const matched = entries.filter((e) => e.card.isKeyCard && !claimed.has(e.card.id));
+        matched.forEach((e) => claimed.add(e.card.id));
+      }
+      return snapshot;
+    });
+  }, [items, entries, usedCardIds]);
 
   // 理論確率（50枚デッキから）
   const result = useMemo(() => {
@@ -107,31 +124,27 @@ export default function ComboCalculator({
     );
   }
 
-  // attr タイプで属性フィルタにマッチするデッキ内枚数
-  function attrMatchCount(item: ComboConditionItem): number {
+  // attr タイプで属性フィルタにマッチするデッキ内枚数。その条件より前の条件が
+  // 確保済みのカードは除いて数える（calculateComboProbability の排他ロジックと表示を一致させるため）
+  function attrMatchCount(item: ComboConditionItem, idx: number): number {
+    const claimed = claimedIdsBeforeIndex[idx];
     return entries
-      .filter(
-        (e) =>
-          (item.filterCardType === undefined || e.card.cardType === item.filterCardType) &&
-          (item.filterColor === undefined || e.card.color === item.filterColor) &&
-          (item.filterLevel === undefined || e.card.level === item.filterLevel) &&
-          (item.filterCost === undefined || e.card.cost === item.filterCost) &&
-          !usedCardIds.has(e.card.id)
-      )
+      .filter((e) => matchesAttrFilter(e.card, item) && !claimed.has(e.card.id))
       .reduce((s, e) => s + e.count, 0);
   }
 
-  function maxMinCount(item: ComboConditionItem): number {
+  function maxMinCount(item: ComboConditionItem, idx: number): number {
     if (item.type === 'card') {
       const entry = entries.find((e) => e.card.id === item.cardId);
       return Math.min(entry?.count ?? 4, 5);
     } else if (item.type === 'attr') {
       // 対象0枚でも「1枚以上」は選択肢として残す（|| だと 0 が falsy で 5 に化けるため Math.max を使う）
-      return Math.min(Math.max(attrMatchCount(item), 1), 5);
+      return Math.min(Math.max(attrMatchCount(item, idx), 1), 5);
     } else {
       // keycard
+      const claimed = claimedIdsBeforeIndex[idx];
       const total = entries
-        .filter((e) => e.card.isKeyCard && !usedCardIds.has(e.card.id))
+        .filter((e) => e.card.isKeyCard && !claimed.has(e.card.id))
         .reduce((s, e) => s + e.count, 0);
       return Math.min(Math.max(total, 1), 5);
     }
@@ -249,7 +262,7 @@ export default function ComboCalculator({
                 {isItemComplete(item) && (
                   <div className={styles.attrMatch}>
                     <span className={styles.attrMatchLabel}>対象</span>
-                    <span className={styles.attrMatchValue}>{attrMatchCount(item)} 枚</span>
+                    <span className={styles.attrMatchValue}>{attrMatchCount(item, idx)} 枚</span>
                   </div>
                 )}
               </div>
@@ -269,7 +282,7 @@ export default function ComboCalculator({
               onChange={(e) => updateItem(idx, { minCount: Number(e.target.value) })}
               disabled={!isItemComplete(item)}
             >
-              {Array.from({ length: maxMinCount(item) }, (_, i) => i + 1).map((n) => (
+              {Array.from({ length: maxMinCount(item, idx) }, (_, i) => i + 1).map((n) => (
                 <option key={n} value={n}>{n}枚以上</option>
               ))}
             </select>

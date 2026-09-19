@@ -3,15 +3,18 @@ import styles from './DeckDistributionChart.module.css';
 
 interface Props { entries: DeckEntry[] }
 
-const RANGE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
 function buildDist(entries: DeckEntry[], key: 'level' | 'cost'): [number, number][] {
   const map: Record<number, number> = {};
   for (const { card, count } of entries) {
     const v = card[key];
     map[v] = (map[v] ?? 0) + count;
   }
-  return RANGE.map((k) => [k, map[k] ?? 0]);
+  // level/cost は 0 も有効値のため、固定レンジではなく実データの最小〜最大を隙間なく表示する
+  const keys = Object.keys(map).map(Number);
+  if (keys.length === 0) return [];
+  const min = Math.min(...keys);
+  const max = Math.max(...keys);
+  return Array.from({ length: max - min + 1 }, (_, i) => min + i).map((k) => [k, map[k] ?? 0]);
 }
 
 function MiniBarChart({ label, data }: { label: string; data: [number, number][] }) {

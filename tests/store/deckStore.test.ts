@@ -108,44 +108,68 @@ describe('loadDecks', () => {
     expect(loadDecks()).toHaveLength(0);
   });
 
-  it('entry.count が範囲外のデッキはフィルタされる', () => {
+  it('entry.count が範囲外のカードはそのエントリだけ間引かれデッキは残る', () => {
     const badEntry = { count: 5, card: { id: 'x', cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false } };
     localStorage.setItem('gcg-decks', JSON.stringify([{
       id: '1', name: 'A', entries: [badEntry], combos: [], createdAt: 'x', updatedAt: 'x',
     }]));
-    expect(loadDecks()).toHaveLength(0);
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].entries).toHaveLength(0);
   });
 
-  it('entry.count が整数でないデッキはフィルタされる', () => {
+  it('entry.count が整数でないカードはそのエントリだけ間引かれデッキは残る', () => {
     const badEntry = { count: 1.5, card: { id: 'x', cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false } };
     localStorage.setItem('gcg-decks', JSON.stringify([{
       id: '1', name: 'A', entries: [badEntry], combos: [], createdAt: 'x', updatedAt: 'x',
     }]));
-    expect(loadDecks()).toHaveLength(0);
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].entries).toHaveLength(0);
   });
 
-  it('card.isKeyCard が真偽値でないデッキはフィルタされる', () => {
+  it('card.isKeyCard が真偽値でないカードはそのエントリだけ間引かれデッキは残る', () => {
     const badCard = { id: 'x', cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: 'true' };
     localStorage.setItem('gcg-decks', JSON.stringify([{
       id: '1', name: 'A', entries: [{ count: 1, card: badCard }], combos: [], createdAt: 'x', updatedAt: 'x',
     }]));
-    expect(loadDecks()).toHaveLength(0);
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].entries).toHaveLength(0);
   });
 
-  it('card.id が文字列でないデッキはフィルタされる', () => {
+  it('card.id が文字列でないカードはそのエントリだけ間引かれデッキは残る', () => {
     const badCard = { id: 123, cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false };
     localStorage.setItem('gcg-decks', JSON.stringify([{
       id: '1', name: 'A', entries: [{ count: 1, card: badCard }], combos: [], createdAt: 'x', updatedAt: 'x',
     }]));
-    expect(loadDecks()).toHaveLength(0);
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].entries).toHaveLength(0);
   });
 
-  it('card.terrain が文字列でない場合はフィルタされる', () => {
+  it('card.terrain が文字列でない場合はそのエントリだけ間引かれデッキは残る', () => {
     const badCard = { id: 'x', cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false, terrain: 123 };
     localStorage.setItem('gcg-decks', JSON.stringify([{
       id: '1', name: 'A', entries: [{ count: 1, card: badCard }], combos: [], createdAt: 'x', updatedAt: 'x',
     }]));
-    expect(loadDecks()).toHaveLength(0);
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].entries).toHaveLength(0);
+  });
+
+  it('一部のカードが破損していても他の正常なカードは保持される', () => {
+    const goodCard = { id: 'ok', cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false };
+    const badCard = { id: 123, cardNo: 'B', name: 'B', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A',
+      entries: [{ count: 1, card: goodCard }, { count: 1, card: badCard }],
+      combos: [], createdAt: 'x', updatedAt: 'x',
+    }]));
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].entries).toHaveLength(1);
+    expect(decks[0].entries[0].card.id).toBe('ok');
   });
 
   it('combos フィールドがない既存デッキは combos=[] で補完される', () => {
@@ -158,50 +182,92 @@ describe('loadDecks', () => {
     expect(decks[0].combos).toEqual([]);
   });
 
-  it('combos の id が文字列でないデッキはフィルタされる', () => {
+  it('combos の id が文字列でない場合はそのコンボだけ間引かれデッキは残る', () => {
     const badCombo = { id: 999, name: 'c', condition: { items: [{ type: 'keycard', minCount: 1 }] } };
     localStorage.setItem('gcg-decks', JSON.stringify([{
       id: '1', name: 'A', entries: [], combos: [badCombo], createdAt: 'x', updatedAt: 'x',
     }]));
-    expect(loadDecks()).toHaveLength(0);
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].combos).toHaveLength(0);
   });
 
-  it('combos の condition が配列でないデッキはフィルタされる', () => {
+  it('combos の condition が配列でない場合はそのコンボだけ間引かれデッキは残る', () => {
     const badCombo = { id: 'c1', name: 'c', condition: { items: 'bad' } };
     localStorage.setItem('gcg-decks', JSON.stringify([{
       id: '1', name: 'A', entries: [], combos: [badCombo], createdAt: 'x', updatedAt: 'x',
     }]));
-    expect(loadDecks()).toHaveLength(0);
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].combos).toHaveLength(0);
   });
 
-  it('combo の item.type が不正なデッキはフィルタされる', () => {
+  it('combo の item.type が不正な場合はそのコンボだけ間引かれデッキは残る', () => {
     const badCombo = { id: 'c1', name: 'c', condition: { items: [{ type: 'invalid', minCount: 1 }] } };
     localStorage.setItem('gcg-decks', JSON.stringify([{
       id: '1', name: 'A', entries: [], combos: [badCombo], createdAt: 'x', updatedAt: 'x',
     }]));
-    expect(loadDecks()).toHaveLength(0);
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].combos).toHaveLength(0);
   });
 
-  it('combo の item がオブジェクトでない場合はフィルタされる', () => {
+  it('combo の item がオブジェクトでない場合はそのコンボだけ間引かれデッキは残る', () => {
     const badCombo = { id: 'c1', name: 'c', condition: { items: ['not-object'] } };
     localStorage.setItem('gcg-decks', JSON.stringify([{
       id: '1', name: 'A', entries: [], combos: [badCombo], createdAt: 'x', updatedAt: 'x',
     }]));
-    expect(loadDecks()).toHaveLength(0);
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].combos).toHaveLength(0);
   });
 
-  it('entry がオブジェクトでない場合はフィルタされる', () => {
+  it('combo の item が card型なのに cardId がない場合はそのコンボだけ間引かれる', () => {
+    const badCombo = { id: 'c1', name: 'c', condition: { items: [{ type: 'card', minCount: 1 }] } };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [], combos: [badCombo], createdAt: 'x', updatedAt: 'x',
+    }]));
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].combos).toHaveLength(0);
+  });
+
+  it('combo の item が attr型なのにフィルタが1つも指定されていない場合はそのコンボだけ間引かれる', () => {
+    const badCombo = { id: 'c1', name: 'c', condition: { items: [{ type: 'attr', minCount: 1 }] } };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [], combos: [badCombo], createdAt: 'x', updatedAt: 'x',
+    }]));
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].combos).toHaveLength(0);
+  });
+
+  it('combo の items が空配列の場合はそのコンボだけ間引かれる', () => {
+    const badCombo = { id: 'c1', name: 'c', condition: { items: [] } };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [], combos: [badCombo], createdAt: 'x', updatedAt: 'x',
+    }]));
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].combos).toHaveLength(0);
+  });
+
+  it('entry がオブジェクトでない場合はそのエントリだけ間引かれデッキは残る', () => {
     localStorage.setItem('gcg-decks', JSON.stringify([{
       id: '1', name: 'A', entries: ['not-object'], combos: [], createdAt: 'x', updatedAt: 'x',
     }]));
-    expect(loadDecks()).toHaveLength(0);
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].entries).toHaveLength(0);
   });
 
-  it('card が null のデッキはフィルタされる（isValidCard null チェック）', () => {
+  it('card が null の場合はそのエントリだけ間引かれデッキは残る（isValidCard null チェック）', () => {
     localStorage.setItem('gcg-decks', JSON.stringify([{
       id: '1', name: 'A', entries: [{ count: 1, card: null }], combos: [], createdAt: 'x', updatedAt: 'x',
     }]));
-    expect(loadDecks()).toHaveLength(0);
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].entries).toHaveLength(0);
   });
 
   it('terrain・feature・link が文字列のカードは正常に復元される', () => {
@@ -220,27 +286,33 @@ describe('loadDecks', () => {
     expect(decks[0].entries[0].card.link).toBe('「アムロ」');
   });
 
-  it('entry.count が 0 のデッキはフィルタされる', () => {
+  it('entry.count が 0 の場合はそのエントリだけ間引かれデッキは残る', () => {
     const validCard = { id: 'x', cardNo: 'A', name: 'A', cardType: 'ユニット', color: '青', level: 1, cost: 1, isKeyCard: false };
     localStorage.setItem('gcg-decks', JSON.stringify([{
       id: '1', name: 'A', entries: [{ count: 0, card: validCard }], combos: [], createdAt: 'x', updatedAt: 'x',
     }]));
-    expect(loadDecks()).toHaveLength(0);
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].entries).toHaveLength(0);
   });
 
-  it('combos 配列に null が含まれる場合はデッキごとフィルタされる（isValidCombo null チェック）', () => {
+  it('combos 配列に null が含まれる場合はそのコンボだけ間引かれデッキは残る（isValidCombo null チェック）', () => {
     localStorage.setItem('gcg-decks', JSON.stringify([{
       id: '1', name: 'A', entries: [], combos: [null], createdAt: 'x', updatedAt: 'x',
     }]));
-    expect(loadDecks()).toHaveLength(0);
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].combos).toHaveLength(0);
   });
 
-  it('combo の condition が null のデッキはフィルタされる（isValidCombo condition チェック）', () => {
+  it('combo の condition が null の場合はそのコンボだけ間引かれデッキは残る（isValidCombo condition チェック）', () => {
     const badCombo = { id: 'c1', name: 'c', condition: null };
     localStorage.setItem('gcg-decks', JSON.stringify([{
       id: '1', name: 'A', entries: [], combos: [badCombo], createdAt: 'x', updatedAt: 'x',
     }]));
-    expect(loadDecks()).toHaveLength(0);
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].combos).toHaveLength(0);
   });
 
   it('デッキ配列に null が含まれる場合は無視される（isValidDeck null チェック）', () => {
