@@ -45,7 +45,7 @@ npm run coverage
 src/
 ├── components/       # Reactコンポーネント（UIのみ、ロジックを含まない）
 │   ├── DeckEditor/   # SC-01: カード追加・編集・削除・キーカード設定・コンボ管理・インポート/エクスポート
-│   ├── Dashboard/    # SC-02: 期待値・分布・キーカード確率・初動安定率(Playability)の表示
+│   ├── Dashboard/    # SC-02: コスト分布・コンボ確率・キーカード確率・初動安定率(Playability)の表示
 │   ├── TestDraw/     # SC-03: ランダムドロー・手動ハンド選択・マリガンシミュレーション
 │   ├── Statistics/   # SC-04: 複数回シミュレーション集計結果（Web Worker経由）
 │   └── common/       # 画面横断の共有コンポーネント（TabNav, CardDetailPanel, ComboCalculator等）
@@ -61,7 +61,7 @@ src/
 ├── workers/
 │   └── simulator.worker.ts  # simulator.tsの重い処理をメインスレッド外で実行
 ├── hooks/
-│   └── useDeckReady.ts       # アクティブデッキが50枚ちょうどかを判定するフック
+│   └── useDeckReady.ts       # アクティブデッキがデッキバリデーション（50枚ちょうど・同一カードNo.4枚上限・使用色2色以内）をすべて満たしているかを判定するフック
 ├── store/
 │   ├── deckStore.ts          # 状態管理ロジックとlocalStorage永続化（最大5デッキ、純粋関数+useDeckStoreフック）
 │   └── DeckStoreContext.tsx  # useDeckStoreをReact Contextとして配布するProvider
@@ -116,7 +116,7 @@ P_マリガン(1枚以上) = 1 - P(0枚)²
 
 ### GCGマリガンの特性
 
-マリガンは「全5枚をデッキ下に戻してシャッフル後に引き直す」ため、**マリガン後の期待値はマリガン前と同値**になる。UIでこの事実を明示し、代わりにコスト分散・標準偏差でマリガンの有用性を表現する。
+マリガンは「全5枚をデッキ下に戻してシャッフル後に引き直す」ため、**マリガン後の期待値はマリガン前と同値**になる（この性質はコンボ成立確率の`probAfterMulligan = 1 - (1 - p)²`やキーカード確率にも反映されている）。現在のDashboard画面では期待値そのものは表示せず、代わりにコスト分布・コンボ確率・キーカード確率・初動安定率（Playability）を表示する。
 
 ## データモデル
 
