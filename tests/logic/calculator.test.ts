@@ -477,10 +477,11 @@ describe('calculateComboProbability', () => {
         { type: 'attr', filterColor: '赤', minCount: 1 },
       ],
     };
+    // keycard条件がk1・k2（deckCount=3）を確保し、attr条件はr1・r2（deckCount=3）のみを対象にする
+    // 手計算値: Σ C(3,x1)*C(3,x2)*C(44,5-x1-x2) / C(50,5) = 136890 / 2118760
     const result = calculateComboProbability(entries, condition);
     expect(result).not.toBeNull();
-    expect(result?.probInitialHand).toBeGreaterThan(0);
-    expect(result?.probInitialHand).toBeLessThanOrEqual(1);
+    expect(result?.probInitialHand).toBeCloseTo(0.06460854462043837, 10);
   });
 
   it('card タイプと attr タイプの混合条件', () => {
@@ -498,6 +499,26 @@ describe('calculateComboProbability', () => {
     };
     const result = calculateComboProbability(entries, condition);
     expect(result).not.toBeNull();
-    expect(result?.probInitialHand).toBeGreaterThanOrEqual(0);
+    expect(result?.probInitialHand).toBeCloseTo(0.22040721931695897, 10);
+  });
+
+  it('card タイプと attr タイプの混合条件はitemsの記載順に関係なく同じ結果になる', () => {
+    // resolveComboClaims は 'card' 型を記載順に関係なく先に確保するため、
+    // attr条件を先に書いても上のテストと同一の確率になるはず
+    const keyCard = makeHandCard({ id: 'key', cardNo: 'KEY' });
+    const entries: DeckEntry[] = [
+      { card: keyCard, count: 4 },
+      { card: makeHandCard({ id: 'r1', cardNo: 'R1', color: '赤' }), count: 10 },
+      { card: makeHandCard({ id: 'b1', cardNo: 'B1', color: '青' }), count: 36 },
+    ];
+    const condition: ComboCondition = {
+      items: [
+        { type: 'attr', filterColor: '赤', minCount: 1 },
+        { type: 'card', cardId: 'key', minCount: 1 },
+      ],
+    };
+    const result = calculateComboProbability(entries, condition);
+    expect(result).not.toBeNull();
+    expect(result?.probInitialHand).toBeCloseTo(0.22040721931695897, 10);
   });
 });

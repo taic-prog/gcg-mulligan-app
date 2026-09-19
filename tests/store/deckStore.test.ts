@@ -232,6 +232,16 @@ describe('loadDecks', () => {
     expect(decks[0].combos).toHaveLength(0);
   });
 
+  it('combo の item が card型なのに cardId が空文字の場合はそのコンボだけ間引かれる', () => {
+    const badCombo = { id: 'c1', name: 'c', condition: { items: [{ type: 'card', cardId: '', minCount: 1 }] } };
+    localStorage.setItem('gcg-decks', JSON.stringify([{
+      id: '1', name: 'A', entries: [], combos: [badCombo], createdAt: 'x', updatedAt: 'x',
+    }]));
+    const decks = loadDecks();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].combos).toHaveLength(0);
+  });
+
   it('combo の item が attr型なのにフィルタが1つも指定されていない場合はそのコンボだけ間引かれる', () => {
     const badCombo = { id: 'c1', name: 'c', condition: { items: [{ type: 'attr', minCount: 1 }] } };
     localStorage.setItem('gcg-decks', JSON.stringify([{
