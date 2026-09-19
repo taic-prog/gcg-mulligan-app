@@ -40,6 +40,7 @@ export default function App() {
             className={styles.btnTheme}
             onClick={() => setDark((d) => !d)}
             title={dark ? 'ライトモードに切替' : 'ダークモードに切替'}
+            aria-label={dark ? 'ライトモードに切替' : 'ダークモードに切替'}
           >
             {dark ? '☀️' : '🌙'}
           </button>

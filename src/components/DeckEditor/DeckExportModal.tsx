@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useModalA11y } from '../../hooks/useModalA11y';
 import styles from './DeckImportModal.module.css';
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 
 export default function DeckExportModal({ text, onClose }: Props) {
   const [copied, setCopied] = useState(false);
+  const closeButtonRef = useModalA11y(onClose);
 
   async function handleCopy() {
     await navigator.clipboard.writeText(text);
@@ -17,10 +19,10 @@ export default function DeckExportModal({ text, onClose }: Props) {
 
   return (
     <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={styles.modal}>
+      <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="export-modal-title">
         <div className={styles.header}>
-          <p className={styles.title}>デッキリストをエクスポート</p>
-          <button className={styles.btnClose} onClick={onClose}>✕</button>
+          <p className={styles.title} id="export-modal-title">デッキリストをエクスポート</p>
+          <button ref={closeButtonRef} className={styles.btnClose} onClick={onClose} aria-label="閉じる">✕</button>
         </div>
 
         <div className={styles.body}>

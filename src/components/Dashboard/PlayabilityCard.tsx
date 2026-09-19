@@ -135,7 +135,7 @@ export default function PlayabilityCard({ entries }: Props) {
       </div>
 
       {running ? (
-        <p className={styles.loading}>計算中…</p>
+        <p className={styles.loading} role="status" aria-live="polite">計算中…</p>
       ) : stats ? (
         <div className={styles.rateGrid}>
           <RateItem label="1ターン目（コスト1）" rate={stats.turn1Rate} impossible={!canPlayT1} />
@@ -189,6 +189,7 @@ export default function PlayabilityCard({ entries }: Props) {
                           type="button"
                           className={styles.pillRemove}
                           onClick={() => updateSel(i, entry.card.id, false)}
+                          aria-label={`${entry.card.name}を選択解除`}
                         >
                           ×
                         </button>

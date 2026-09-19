@@ -147,7 +147,7 @@ export default function TestDraw() {
         )}
 
         <SimulationButtons onRun={handleRunSim} disabled={simRunning} />
-        {simRunning && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>計算中…</p>}
+        {simRunning && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }} role="status" aria-live="polite">計算中…</p>}
       </div>
 
       {simStats && (

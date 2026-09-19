@@ -92,6 +92,8 @@ export default function ManualHandSelector({ entries, onConfirm }: Props) {
                         className={styles.btnExpand}
                         onClick={() => toggleExpand(card.id)}
                         title="詳細表示"
+                        aria-label={expanded ? '詳細を閉じる' : '詳細を表示'}
+                        aria-expanded={expanded}
                       >
                         {expanded ? '▴' : '▾'}
                       </button>
@@ -107,12 +109,14 @@ export default function ManualHandSelector({ entries, onConfirm }: Props) {
                     className={styles.btnAdj}
                     onClick={() => remove(card.id)}
                     disabled={selected === 0}
+                    aria-label={`${card.name}を手札から1枚減らす`}
                   >−</button>
                   <span className={styles.selected}>{selected}</span>
                   <button
                     className={styles.btnAdj}
                     onClick={() => add(card.id)}
                     disabled={selected >= count || total >= HAND_SIZE}
+                    aria-label={`${card.name}を手札に1枚加える`}
                   >＋</button>
                 </div>
               </div>

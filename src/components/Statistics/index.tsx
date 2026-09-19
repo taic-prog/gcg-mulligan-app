@@ -42,7 +42,7 @@ export default function Statistics() {
             </button>
           ))}
         </div>
-        {running && <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>計算中…</p>}
+        {running && <p style={{ fontSize: 12, color: 'var(--text-muted)' }} role="status" aria-live="polite">計算中…</p>}
       </div>
 
       {stats && (

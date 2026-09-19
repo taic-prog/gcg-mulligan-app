@@ -3,6 +3,7 @@ import { fetchCardInfo } from '../../logic/cardFetch';
 import { recognizeDeckImage } from '../../logic/imageOcr';
 import { parseDeckText } from '../../logic/deckImport';
 import { buildCard } from '../../logic/validator';
+import { useModalA11y } from '../../hooks/useModalA11y';
 import type { OcrProgress } from '../../logic/imageOcr';
 import type { DeckEntry } from '../../types';
 import styles from './DeckImportModal.module.css';
@@ -159,12 +160,14 @@ export default function DeckImportModal({ onImport, onClose }: Props) {
     onClose();
   }
 
+  const closeButtonRef = useModalA11y(handleClose);
+
   return (
     <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && handleClose()}>
-      <div className={styles.modal}>
+      <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
         <div className={styles.header}>
-          <p className={styles.title}>デッキリストをインポート</p>
-          <button className={styles.btnClose} onClick={handleClose}>✕</button>
+          <p className={styles.title} id="import-modal-title">デッキリストをインポート</p>
+          <button ref={closeButtonRef} className={styles.btnClose} onClick={handleClose} aria-label="閉じる">✕</button>
         </div>
 
         {/* タブ（入力ステップのみ表示） */}
@@ -216,7 +219,16 @@ export default function DeckImportModal({ onImport, onClose }: Props) {
               {!imageFile ? (
                 <div
                   className={isDragOver ? styles.dropZoneActive : styles.dropZone}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="画像を選択"
                   onClick={() => fileInputRef.current?.click()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      fileInputRef.current?.click();
+                    }
+                  }}
                   onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                   onDragLeave={() => setIsDragOver(false)}
                   onDrop={handleDrop}
@@ -237,7 +249,7 @@ export default function DeckImportModal({ onImport, onClose }: Props) {
                           style={{ width: `${ocrProgress.progress * 100}%` }}
                         />
                       </div>
-                      <p className={styles.progressLabel}>
+                      <p className={styles.progressLabel} role="status" aria-live="polite">
                         {ocrProgress.status} … {Math.round(ocrProgress.progress * 100)}%
                       </p>
                     </>
@@ -274,12 +286,12 @@ export default function DeckImportModal({ onImport, onClose }: Props) {
                 ))}
               </div>
               {step === 'fetching' && (
-                <p className={styles.progress}>
+                <p className={styles.progress} role="status" aria-live="polite">
                   {loadedCount} / {results.length} 取得中…
                 </p>
               )}
               {step === 'done' && (
-                <p className={styles.progress}>
+                <p className={styles.progress} role="status" aria-live="polite">
                   完了: {doneCount} 件成功 {errorCount > 0 ? `/ ${errorCount} 件失敗` : ''}
                 </p>
               )}

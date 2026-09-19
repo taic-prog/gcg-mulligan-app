@@ -29,6 +29,8 @@ export default function DeckListItem({ entry, onUpdateCount, onToggleKeyCard, on
               className={styles.btnExpand}
               onClick={() => setExpanded((v) => !v)}
               title="詳細表示"
+              aria-label={expanded ? '詳細を閉じる' : '詳細を表示'}
+              aria-expanded={expanded}
             >
               {expanded ? '▴' : '▾'}
             </button>
@@ -37,16 +39,31 @@ export default function DeckListItem({ entry, onUpdateCount, onToggleKeyCard, on
         <span className={styles.lvBadge}>Lv:{card.level}</span>
         <span className={styles.costBadge}>C:{card.cost}</span>
         <div className={styles.counter}>
-          <button onClick={() => onUpdateCount(card.id, count - 1)} disabled={count <= 1}>－</button>
+          <button
+            onClick={() => onUpdateCount(card.id, count - 1)}
+            disabled={count <= 1}
+            aria-label="枚数を1枚減らす"
+          >－</button>
           <span className={styles.countNum}>{count}</span>
-          <button onClick={() => onUpdateCount(card.id, count + 1)} disabled={count >= 4}>＋</button>
+          <button
+            onClick={() => onUpdateCount(card.id, count + 1)}
+            disabled={count >= 4}
+            aria-label="枚数を1枚増やす"
+          >＋</button>
         </div>
         <button
           className={`${styles.btnKey} ${card.isKeyCard ? styles.active : ''}`}
           onClick={() => onToggleKeyCard(card.id)}
           title="キーカード切替"
+          aria-label="キーカード切替"
+          aria-pressed={card.isKeyCard}
         >🔑</button>
-        <button className={styles.btnRemove} onClick={() => onRemove(card.id)} title="削除">✕</button>
+        <button
+          className={styles.btnRemove}
+          onClick={() => onRemove(card.id)}
+          title="削除"
+          aria-label="デッキから削除"
+        >✕</button>
       </div>
       {expanded && hasDetail && <CardDetailPanel card={card} />}
     </div>

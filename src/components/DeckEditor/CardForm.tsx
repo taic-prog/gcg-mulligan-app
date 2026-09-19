@@ -192,9 +192,10 @@ export default function CardForm({ entries, onAdd }: Props) {
     <form onSubmit={handleSubmit}>
       <div className={styles.formGrid}>
         <div>
-          <label>カードNo.</label>
+          <label htmlFor="card-no">カードNo.</label>
           <div className={styles.cardNoRow}>
             <input
+              id="card-no"
               value={form.cardNo}
               onChange={(e) => { set('cardNo', e.target.value); setFetchError(null); }}
               placeholder="例: GD01-001"
@@ -212,13 +213,14 @@ export default function CardForm({ entries, onAdd }: Props) {
           {fetchError && <p className={styles.fetchError}>{fetchError}</p>}
         </div>
         <div>
-          <label>枚数</label>
-          <input type="number" min={1} max={MAX_SAME_CARD} value={form.count} onChange={(e) => set('count', e.target.value)} />
+          <label htmlFor="card-count">枚数</label>
+          <input id="card-count" type="number" min={1} max={MAX_SAME_CARD} value={form.count} onChange={(e) => set('count', e.target.value)} />
         </div>
         <div className={styles.formFull}>
-          <label>カード名 *</label>
+          <label htmlFor="card-name">カード名 *</label>
           <div className={styles.nameWrapper}>
             <input
+              id="card-name"
               value={form.name}
               onChange={(e) => handleNameInput(e.target.value)}
               onKeyDown={handleNameKeyDown}
@@ -227,12 +229,20 @@ export default function CardForm({ entries, onAdd }: Props) {
               required
               autoComplete="off"
               maxLength={100}
+              role="combobox"
+              aria-expanded={suggestions.length > 0}
+              aria-controls="card-name-suggestions"
+              aria-autocomplete="list"
+              aria-activedescendant={activeIdx >= 0 ? `card-suggestion-${activeIdx}` : undefined}
             />
             {suggestions.length > 0 && (
-              <ul className={styles.suggestions}>
+              <ul id="card-name-suggestions" role="listbox" className={styles.suggestions}>
                 {suggestions.map((card, i) => (
                   <li
                     key={card.cardNo}
+                    id={`card-suggestion-${i}`}
+                    role="option"
+                    aria-selected={i === activeIdx}
                     className={`${styles.suggestion} ${i === activeIdx ? styles.suggestionActive : ''}`}
                     onMouseDown={() => handleSuggestionMouseDown(card)}
                   >
@@ -247,40 +257,40 @@ export default function CardForm({ entries, onAdd }: Props) {
           </div>
         </div>
         <div>
-          <label>タイプ</label>
-          <select value={form.cardType} onChange={(e) => set('cardType', e.target.value as CardType)}>
+          <label htmlFor="card-type">タイプ</label>
+          <select id="card-type" value={form.cardType} onChange={(e) => set('cardType', e.target.value as CardType)}>
             {CARD_TYPES.map((t) => <option key={t}>{t}</option>)}
           </select>
         </div>
         <div>
-          <label>色</label>
-          <select value={form.color} onChange={(e) => set('color', e.target.value as CardColor)}>
+          <label htmlFor="card-color">色</label>
+          <select id="card-color" value={form.color} onChange={(e) => set('color', e.target.value as CardColor)}>
             {CARD_COLORS.map((c) => <option key={c}>{c}</option>)}
           </select>
         </div>
         <div>
-          <label>Lv.</label>
-          <input type="number" min={0} max={MAX_LEVEL} value={form.level} onChange={(e) => set('level', e.target.value)} />
+          <label htmlFor="card-level">Lv.</label>
+          <input id="card-level" type="number" min={0} max={MAX_LEVEL} value={form.level} onChange={(e) => set('level', e.target.value)} />
         </div>
         <div>
-          <label>コスト</label>
-          <input type="number" min={0} max={MAX_COST} value={form.cost} onChange={(e) => set('cost', e.target.value)} />
+          <label htmlFor="card-cost">コスト</label>
+          <input id="card-cost" type="number" min={0} max={MAX_COST} value={form.cost} onChange={(e) => set('cost', e.target.value)} />
         </div>
         <div className={styles.checkRow}>
           <input type="checkbox" id="isKeyCard" checked={form.isKeyCard} onChange={(e) => set('isKeyCard', e.target.checked)} />
           <label htmlFor="isKeyCard">キーカード</label>
         </div>
         <div className={styles.formFull}>
-          <label>地形</label>
-          <input value={form.terrain} onChange={(e) => set('terrain', e.target.value)} placeholder="例: 宇宙 地球" maxLength={50} />
+          <label htmlFor="card-terrain">地形</label>
+          <input id="card-terrain" value={form.terrain} onChange={(e) => set('terrain', e.target.value)} placeholder="例: 宇宙 地球" maxLength={50} />
         </div>
         <div className={styles.formFull}>
-          <label>特徴</label>
-          <input value={form.feature} onChange={(e) => set('feature', e.target.value)} placeholder="例: 〔地球連邦〕 〔WB隊〕" maxLength={100} />
+          <label htmlFor="card-feature">特徴</label>
+          <input id="card-feature" value={form.feature} onChange={(e) => set('feature', e.target.value)} placeholder="例: 〔地球連邦〕 〔WB隊〕" maxLength={100} />
         </div>
         <div className={styles.formFull}>
-          <label>リンク</label>
-          <input value={form.link} onChange={(e) => set('link', e.target.value)} placeholder="例: 「アムロ・レイ」" maxLength={100} />
+          <label htmlFor="card-link">リンク</label>
+          <input id="card-link" value={form.link} onChange={(e) => set('link', e.target.value)} placeholder="例: 「アムロ・レイ」" maxLength={100} />
         </div>
       </div>
       {errors.length > 0 && (

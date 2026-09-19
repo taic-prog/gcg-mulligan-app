@@ -22,6 +22,7 @@ export default function TabNav({ screen, onChangeScreen }: Props) {
           key={t.id}
           className={`${styles.tab} ${screen === t.id ? styles.active : ''}`}
           onClick={() => onChangeScreen(t.id)}
+          aria-current={screen === t.id ? 'page' : undefined}
         >
           {t.label}
         </button>
