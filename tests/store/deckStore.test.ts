@@ -325,7 +325,7 @@ describe('loadDecks', () => {
     expect(decks[0].combos).toHaveLength(0);
   });
 
-  it('デッキ配列に null が含まれる場合は無視される（isValidDeck null チェック）', () => {
+  it('デッキ配列に null が含まれる場合は無視される（isRawDeckShape null チェック）', () => {
     const validDeck = { id: '1', name: 'A', entries: [], combos: [], createdAt: 'x', updatedAt: 'x' };
     localStorage.setItem('gcg-decks', JSON.stringify([null, validDeck]));
     expect(loadDecks()).toHaveLength(1);

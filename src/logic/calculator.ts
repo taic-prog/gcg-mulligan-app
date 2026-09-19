@@ -135,21 +135,6 @@ export function checkComboCondition(hand: Card[], condition: ComboCondition): bo
   return [...cardItems, ...otherItems].every(evaluate);
 }
 
-// 初期手札を除いた残りのデッキエントリを返す
-export function computeRemainingEntries(entries: DeckEntry[], hand: Card[]): DeckEntry[] {
-  const countMap = new Map(entries.map((e) => [e.card.id, e.count]));
-  for (const card of hand) {
-    const n = countMap.get(card.id);
-    if (n !== undefined) {
-      if (n <= 1) countMap.delete(card.id);
-      else countMap.set(card.id, n - 1);
-    }
-  }
-  return entries
-    .map((e) => ({ ...e, count: countMap.get(e.card.id) ?? 0 }))
-    .filter((e) => e.count > 0);
-}
-
 // 超幾何分布の多変量列挙: 各グループの引き枚数を指定範囲で列挙して合計する
 // totalDeck に実際のデッキ枚数を渡すことで 45枚デッキにも対応
 function enumerateHandProb(

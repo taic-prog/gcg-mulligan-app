@@ -5,7 +5,6 @@ import {
   calculateKeyCardProbability,
   checkComboCondition,
   combination,
-  computeRemainingEntries,
 } from '../../src/logic/calculator';
 import type { Card, ComboCondition, DeckEntry } from '../../src/types';
 
@@ -302,47 +301,6 @@ describe('checkComboCondition', () => {
       items: [{ type: 'attr', filterCardType: 'ユニット', filterColor: '赤', filterLevel: 2, filterCost: 3, minCount: 1 }],
     };
     expect(checkComboCondition(hand, condition)).toBe(true);
-  });
-});
-
-// -----------------------------------------------------------------------
-// computeRemainingEntries
-// -----------------------------------------------------------------------
-
-describe('computeRemainingEntries', () => {
-  it('手札のカードがエントリから減算される', () => {
-    const card = makeHandCard({ id: 'c1', cardNo: 'GD01-001' });
-    const entries: DeckEntry[] = [{ card, count: 3 }];
-    const hand = [card];
-    const remaining = computeRemainingEntries(entries, hand);
-    expect(remaining[0].count).toBe(2);
-  });
-
-  it('count が 1 のカードを手札に持つとエントリから消える', () => {
-    const card = makeHandCard({ id: 'c1' });
-    const entries: DeckEntry[] = [{ card, count: 1 }];
-    const remaining = computeRemainingEntries(entries, [card]);
-    expect(remaining).toHaveLength(0);
-  });
-
-  it('手札に entries にないカードがあっても無視される', () => {
-    const cardA = makeHandCard({ id: 'a', cardNo: 'A' });
-    const entries: DeckEntry[] = [{ card: cardA, count: 2 }];
-    const extraCard = makeHandCard({ id: 'not-in-deck', cardNo: 'X' });
-    const remaining = computeRemainingEntries(entries, [cardA, extraCard]);
-    expect(remaining[0].count).toBe(1);
-  });
-
-  it('手札にないカードは変化しない', () => {
-    const cardA = makeHandCard({ id: 'a', cardNo: 'A' });
-    const cardB = makeHandCard({ id: 'b', cardNo: 'B' });
-    const entries: DeckEntry[] = [
-      { card: cardA, count: 2 },
-      { card: cardB, count: 4 },
-    ];
-    const remaining = computeRemainingEntries(entries, [cardA]);
-    const bEntry = remaining.find((e) => e.card.id === 'b');
-    expect(bEntry?.count).toBe(4);
   });
 });
 
