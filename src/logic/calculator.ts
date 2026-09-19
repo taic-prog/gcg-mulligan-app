@@ -174,6 +174,30 @@ function enumerateHandProb(
   return rec(0, HAND_SIZE, 1) / denom;
 }
 
+// 各条件が対象とするカードを他条件と重複させないよう、リスト順に排他的に確保していく。
+// 'card'型は特定の1銘柄を指すため、記載順に関わらず先に確保する。
+// 戻り値は各条件（items[idx]）を評価する時点で「既に他条件に確保済みのカードID」の配列。
+// calculateComboProbability・ComboCalculator.tsx（UI側の対象枚数表示）で共有する
+export function resolveComboClaims(
+  entries: DeckEntry[],
+  items: ComboConditionItem[]
+): Set<string>[] {
+  const claimed = new Set(
+    items.filter((i) => i.type === 'card' && i.cardId).map((i) => i.cardId!)
+  );
+  return items.map((item) => {
+    const snapshot = new Set(claimed);
+    if (item.type === 'attr') {
+      const matched = entries.filter((e) => matchesAttrFilter(e.card, item) && !claimed.has(e.card.id));
+      matched.forEach((e) => claimed.add(e.card.id));
+    } else if (item.type === 'keycard') {
+      const matched = entries.filter((e) => e.card.isKeyCard && !claimed.has(e.card.id));
+      matched.forEach((e) => claimed.add(e.card.id));
+    }
+    return snapshot;
+  });
+}
+
 export function calculateComboProbability(
   entries: DeckEntry[],
   condition: ComboCondition
@@ -183,16 +207,10 @@ export function calculateComboProbability(
   const totalDeck = entries.reduce((s, e) => s + e.count, 0);
   if (totalDeck < HAND_SIZE) return null;
 
-  // 各条件が対象とするカードは他条件と重複させず、リスト順に排他的に確保する。
-  // 'card'型は特定の1銘柄を指すため、順序に関わらず先に確保する
-  const claimedCardIds = new Set(
-    condition.items
-      .filter((i) => i.type === 'card' && i.cardId)
-      .map((i) => i.cardId!)
-  );
+  const claims = resolveComboClaims(entries, condition.items);
 
   const resolved = condition.items.map(
-    (item): { deckCount: number; minCount: number } | null => {
+    (item, idx): { deckCount: number; minCount: number } | null => {
       if (item.type === 'card') {
         const entry = entries.find((e) => e.card.id === item.cardId);
         if (!entry) return null;
@@ -205,17 +223,17 @@ export function calculateComboProbability(
           item.filterLevel === undefined &&
           item.filterCost === undefined
         ) return null;
-        const matched = entries.filter(
-          (e) => matchesAttrFilter(e.card, item) && !claimedCardIds.has(e.card.id)
-        );
-        matched.forEach((e) => claimedCardIds.add(e.card.id));
-        const deckCount = matched.reduce((s, e) => s + e.count, 0);
+        const claimed = claims[idx];
+        const deckCount = entries
+          .filter((e) => matchesAttrFilter(e.card, item) && !claimed.has(e.card.id))
+          .reduce((s, e) => s + e.count, 0);
         return { deckCount, minCount: item.minCount };
       } else {
         // keycard
-        const matched = entries.filter((e) => e.card.isKeyCard && !claimedCardIds.has(e.card.id));
-        matched.forEach((e) => claimedCardIds.add(e.card.id));
-        const deckCount = matched.reduce((s, e) => s + e.count, 0);
+        const claimed = claims[idx];
+        const deckCount = entries
+          .filter((e) => e.card.isKeyCard && !claimed.has(e.card.id))
+          .reduce((s, e) => s + e.count, 0);
         return { deckCount, minCount: item.minCount };
       }
     }

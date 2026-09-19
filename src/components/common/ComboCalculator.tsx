@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { calculateComboProbability, checkComboCondition, matchesAttrFilter } from '../../logic/calculator';
+import {
+  calculateComboProbability,
+  checkComboCondition,
+  matchesAttrFilter,
+  resolveComboClaims,
+} from '../../logic/calculator';
 import type {
   Card,
   CardColor,
@@ -69,22 +74,9 @@ export default function ComboCalculator({
     [items]
   );
 
-  // calculateComboProbability と同じ順序・ロジックで「各条件を評価する時点で
-  // 既に他条件に確保済みのカードID」を算出する（対象枚数表示・選択上限をバックエンドと一致させる）
-  const claimedIdsBeforeIndex = useMemo(() => {
-    const claimed = new Set(usedCardIds);
-    return items.map((item) => {
-      const snapshot = new Set(claimed);
-      if (item.type === 'attr') {
-        const matched = entries.filter((e) => matchesAttrFilter(e.card, item) && !claimed.has(e.card.id));
-        matched.forEach((e) => claimed.add(e.card.id));
-      } else if (item.type === 'keycard') {
-        const matched = entries.filter((e) => e.card.isKeyCard && !claimed.has(e.card.id));
-        matched.forEach((e) => claimed.add(e.card.id));
-      }
-      return snapshot;
-    });
-  }, [items, entries, usedCardIds]);
+  // calculateComboProbability と全く同じ関数で「各条件を評価する時点で既に
+  // 他条件に確保済みのカードID」を算出する（対象枚数表示・選択上限をバックエンドと一致させる）
+  const claimedIdsBeforeIndex = useMemo(() => resolveComboClaims(entries, items), [entries, items]);
 
   // 理論確率（50枚デッキから）
   const result = useMemo(() => {
