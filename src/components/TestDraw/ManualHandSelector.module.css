@@ -57,7 +57,12 @@
 
 .cardHeader { display: flex; align-items: center; gap: 6px; }
 
-.btnExpand { padding: 0 3px; background: transparent; border: none; color: var(--text-muted); font-size: 10px; cursor: pointer; line-height: 1; }
+.btnExpand {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 32px; min-height: 32px;
+  padding: 0 3px; background: transparent; border: none; color: var(--text-muted);
+  font-size: 10px; cursor: pointer; line-height: 1;
+}
 .btnExpand:hover { color: var(--text); }
 
 .info {
@@ -102,8 +107,8 @@
 }
 
 .btnAdj {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -168,6 +168,11 @@
 }
 
 .pillRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  min-height: 22px;
   border: none;
   background: none;
   color: var(--primary);

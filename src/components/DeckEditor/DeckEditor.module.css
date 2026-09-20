@@ -27,7 +27,7 @@
 .btnDel:hover { background: #fecaca; }
 
 /* フォーム */
-.formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.formGrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
 .formFull { grid-column: 1 / -1; }
 .formActions { margin-top: 12px; }
 .btnAdd { background: var(--primary); color: #fff; width: 100%; padding: 8px; font-weight: 600; }
@@ -98,6 +98,7 @@
 .item:last-child { border-bottom: none; }
 .itemMain {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding: 8px 6px;
@@ -105,17 +106,35 @@
 .keyIcon { color: var(--key); font-size: 14px; flex-shrink: 0; }
 .nameGroup { flex: 1; display: flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden; }
 .cardName { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.btnExpand { padding: 0 3px; background: transparent; border: none; color: var(--text-muted); font-size: 10px; cursor: pointer; flex-shrink: 0; line-height: 1; }
+.btnExpand {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 32px; min-height: 32px;
+  padding: 0 3px; background: transparent; border: none; color: var(--text-muted);
+  font-size: 10px; cursor: pointer; flex-shrink: 0; line-height: 1;
+}
 .btnExpand:hover { color: var(--text); }
 .lvBadge { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
 .costBadge { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
 .counter { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-.counter button { padding: 2px 7px; background: var(--bg); border: 1px solid var(--border); font-weight: 700; min-width: 24px; border-radius: 3px; }
+.counter button {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 32px; min-height: 32px;
+  padding: 2px 7px; background: var(--bg); border: 1px solid var(--border);
+  font-weight: 700; border-radius: 3px;
+}
 .counter button:hover:not(:disabled) { background: var(--border); }
 .countNum { min-width: 16px; text-align: center; font-weight: 600; }
-.btnKey { padding: 2px 6px; background: transparent; border: 1px solid var(--border); font-size: 13px; }
+.btnKey {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 32px; min-height: 32px;
+  padding: 2px 6px; background: transparent; border: 1px solid var(--border); font-size: 13px;
+}
 .btnKey.active { background: #fef3c7; border-color: var(--key); }
-.btnRemove { padding: 2px 6px; background: transparent; border: 1px solid var(--border); color: var(--error); font-size: 13px; }
+.btnRemove {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 32px; min-height: 32px;
+  padding: 2px 6px; background: transparent; border: 1px solid var(--border); color: var(--error); font-size: 13px;
+}
 .btnRemove:hover { background: #fee2e2; }
 
 /* DeckSummary */
